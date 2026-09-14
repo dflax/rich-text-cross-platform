@@ -1,0 +1,22 @@
+# Swift
+.build/
+.swiftpm/
+*.xcodeproj
+!*.xcodeproj/project.pbxproj
+DerivedData/
+.DS_Store
+
+# Web / Node
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Editors
+.vscode/
+.idea/
