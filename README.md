@@ -61,7 +61,9 @@ One package, two products — add it once, pick which product(s) you need:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/dflax/rich-text-cross-platform", from: "0.1.0")
+    // No tagged release yet — pin to `branch: "main"` until v0.1.0 is cut, then switch to
+    // `from: "0.1.0"`. Verified: `from:` fails to resolve today with no tags pushed.
+    .package(url: "https://github.com/dflax/rich-text-cross-platform", branch: "main")
 ],
 targets: [
     .target(name: "YourApp", dependencies: ["RichTextCore", "RichTextEditor"])
