@@ -6,6 +6,33 @@
 DerivedData/
 .DS_Store
 
+## Xcode user settings
+xcuserdata/
+
+## Obj-C/Swift specific
+*.hmap
+
+## App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+## Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# CocoaPods (we don't use it, but keep this if that ever changes)
+# Pods/
+
+# Carthage (we don't use it, but keep this if that ever changes)
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
 # Web / Node
 node_modules/
 dist/
