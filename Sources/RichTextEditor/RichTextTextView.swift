@@ -1,3 +1,4 @@
+#if canImport(UIKit)
 import RichTextCore
 import SwiftUI
 import UIKit
@@ -202,3 +203,4 @@ struct RichTextTextView: UIViewRepresentable {
         }
     }
 }
+#endif

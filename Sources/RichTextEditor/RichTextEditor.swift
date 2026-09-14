@@ -1,3 +1,4 @@
+#if canImport(UIKit)
 import PhotosUI
 import RichTextCore
 import SwiftUI
@@ -47,22 +48,10 @@ public struct RichTextEditorConfiguration: Sendable {
     public static let `default` = RichTextEditorConfiguration()
 }
 
-/// Long-edge pixel cap and JPEG quality for a picked image before it reaches
-/// `RichTextImageUploading`. Applied once, at pick time — never re-derived from whatever the
-/// image happens to already be, since a photo library asset can be arbitrarily large.
-public struct ImageDownscaling: Sendable {
-    public var maxLongEdge: CGFloat
-    public var jpegQuality: CGFloat
-
-    public init(maxLongEdge: CGFloat, jpegQuality: CGFloat) {
-        self.maxLongEdge = maxLongEdge
-        self.jpegQuality = jpegQuality
-    }
-
-    /// 1600pt / 0.75 — sharp at typical reading-column widths on a Retina display, while
-    /// keeping a multi-megabyte phone photo down to a few hundred KB.
-    public static let `default` = ImageDownscaling(maxLongEdge: 1600, jpegQuality: 0.75)
-}
+// ImageDownscaling itself lives in ImageDownscaler.swift, outside this file's
+// #if canImport(UIKit) guard — it's a plain, genuinely cross-platform configuration struct
+// (ImageDownscaler.swift already compiles on both UIKit and AppKit), and RichTextEditorConfiguration
+// referencing it here must not force it to only exist on UIKit platforms.
 
 /// A rich-text editor backed by a real `UITextView` — real hanging indent and non-selectable
 /// list markers via TextKit 2's `NSTextList`, not literal marker characters in the buffer. See
@@ -342,3 +331,4 @@ public struct RichTextEditor: View {
             .foregroundStyle(.white)
     }
 }
+#endif

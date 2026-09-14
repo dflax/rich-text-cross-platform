@@ -1,3 +1,4 @@
+#if canImport(UIKit)
 import Foundation
 import Observation
 import RichTextCore
@@ -487,3 +488,4 @@ public final class RichTextEditorModel {
     public func reportError(_ message: String) { lastError = message }
     public func clearErrors() { lastError = nil; integrityFailure = nil }
 }
+#endif

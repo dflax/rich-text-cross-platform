@@ -72,8 +72,9 @@ never present in the editable string. The cost is real too, named rather than gl
   `allowsEditingTextAttributes = false` closes off the system's own format UI, and paste
   interception + an `NSTextStorageDelegate` backstop close off the realistic remaining vector —
   see `docs/guides/vocabulary-enforcement.md`.
-- **No macOS story yet.** `NSTextView` is AppKit's related but distinct API surface. This project
-  has not built or tested against it — see `README.md`'s Scope section.
+- **No macOS story yet — but committed, in-progress work, not a maybe.** `NSTextView` is
+  AppKit's related but distinct API surface; a real editor on it is scoped in `docs/ROADMAP.md`
+  and not yet built. See `README.md`'s Scope section for current status.
 
 ## One document, one mutable copy
 

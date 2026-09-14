@@ -17,7 +17,7 @@ project carries that implementation forward as a real, reusable component. The S
 
 ## What was ported as-is
 
-`swift/RichTextCore/Sources/RichTextCore/` — Delta value types, vocabulary enforcement, the
+`Sources/RichTextCore/` — Delta value types, vocabulary enforcement, the
 `NSAttributedString` codec (`NSDeltaCodec`), read-only rendering, the offline-safe image cache
 (`ImageStore`), and three-way sync reconciliation. This is the POC's own `RichTextCore` Swift
 package, unchanged in logic. Three adjustments for standalone use:
@@ -36,7 +36,7 @@ package, unchanged in logic. Three adjustments for standalone use:
 
 ## What was extracted and rewritten
 
-`swift/RichTextEditor/Sources/RichTextEditor/` — the POC's `UIKitEditorModel`/`UITextViewRepresentable`/
+`Sources/RichTextEditor/` — the POC's `UIKitEditorModel`/`UITextViewRepresentable`/
 `NotesFormatBar` (renamed `RichTextEditorModel`/`RichTextTextView`/`RichTextFormatBar`), which
 turned out to already have zero direct coupling to the POC's backend services — that coupling
 lived entirely in the SwiftUI view that hosted them (`UIKitDocumentEditorView`), not in the

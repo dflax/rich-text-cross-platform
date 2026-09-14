@@ -1,3 +1,4 @@
+#if canImport(UIKit)
 import RichTextCore
 @testable import RichTextEditor
 import Testing
@@ -77,3 +78,4 @@ struct RichTextEditorModelTests {
         #expect(info?.alt == "A test image")
     }
 }
+#endif

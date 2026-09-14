@@ -1,27 +1,24 @@
 # Getting started — iOS/iPadOS
 
-## Add the packages
+## Add the package
 
-`RichTextCore` and `RichTextEditor` are two separate Swift packages (`swift/RichTextCore/`,
-`swift/RichTextEditor/`) — see `docs/ROADMAP.md`'s Open Decisions for why, and for the current
-distribution story (local path only for now, not yet a single remote `.package(url:)` add):
+One `Package.swift`, two products — add the repo once, depend on both products:
 
 ```swift
 // Package.swift
 dependencies: [
-    .package(path: "../rich-text-cross-platform/swift/RichTextCore"),
-    .package(path: "../rich-text-cross-platform/swift/RichTextEditor"),
+    .package(url: "https://github.com/dflax/rich-text-cross-platform", from: "0.1.0")
 ],
 targets: [
     .target(name: "YourApp", dependencies: ["RichTextCore", "RichTextEditor"])
 ]
 ```
 
-Or in Xcode: File → Add Package Dependencies… → Add Local…, once for each of
-`swift/RichTextCore/` and `swift/RichTextEditor/`.
+Or in Xcode: File → Add Package Dependencies…, point at the repo (or "Add Local…" for a local
+checkout while iterating), select both `RichTextCore` and `RichTextEditor`.
 
-**Minimum deployment target: iOS 26 / iPadOS 26** — see `docs/ROADMAP.md`'s Open Decisions for
-why, and the plan to lower it.
+**Minimum deployment target: iOS 26 / iPadOS 26** — see `docs/ROADMAP.md`'s Decided section for
+why this isn't being lowered.
 
 ## The three things you provide
 

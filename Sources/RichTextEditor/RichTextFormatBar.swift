@@ -1,3 +1,4 @@
+#if canImport(UIKit)
 import SwiftUI
 
 /// The default toolbar: lists/link/photo live on a floating glass bar docked above the
@@ -144,3 +145,4 @@ struct RichTextFormatBar: View {
         .buttonStyle(.plain)
     }
 }
+#endif

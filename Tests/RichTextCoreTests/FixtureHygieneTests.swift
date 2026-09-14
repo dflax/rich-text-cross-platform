@@ -183,7 +183,7 @@ struct FixtureHygieneTests {
             }
         }
 
-        for bad in ["https://f005.backblazeb2.com/file/rich-text-poc/a.jpg",
+        for bad in ["https://f005.backblazeb2.com/file/example-bucket/a.jpg",
                     "http://example.org/a.jpg",
                     "data:image/jpeg;base64,/9j/4AAQ"] {
             let delta = Delta(ops: [.image(bad), .text("\n")])

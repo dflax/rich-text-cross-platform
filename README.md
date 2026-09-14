@@ -13,13 +13,14 @@ handling. Quill Delta is a small, well-specified JSON format with the structure 
 needs and none of Markdown's ambiguity; this project's job is a matching pair of first-class
 native editors around it, plus enough backend-agnostic contract that it isn't tied to one stack.
 
-**Status: early — see [`docs/ROADMAP.md`](docs/ROADMAP.md).** The Swift package and the web
-package are both real and tested — 87 Swift tests, 22 web tests, the web tests proven against the
-*same* fixture corpus the Swift side uses, which is the actual cross-platform-consistency proof.
-Not yet done: sample apps aren't fully wired into runnable projects yet, the web package has no
-build step for publishing, and backend adapters beyond a real Postgres schema are guidance, not
-shipped code. Don't point production traffic at this yet — see [`PROVENANCE.md`](PROVENANCE.md)
-for exactly what's proven versus newly extracted.
+**Status: early.** The Swift package and the web package are both real and tested — 87 Swift
+tests, 22 web tests, the web tests proven against the *same* fixture corpus the Swift side uses,
+which is the actual cross-platform-consistency proof, not just a claim. Not yet done: a native
+macOS editor (in progress — see `docs/ROADMAP.md`), sample apps aren't fully wired into runnable
+projects yet, the web package has no build step for publishing, and backend adapters beyond a
+real Postgres schema are guidance, not shipped code. Don't point production traffic at this yet —
+see [`PROVENANCE.md`](PROVENANCE.md) for exactly what's proven versus newly extracted, and
+[`docs/ROADMAP.md`](docs/ROADMAP.md) for the full punch list.
 
 ## Scope, read carefully
 
@@ -27,10 +28,9 @@ for exactly what's proven versus newly extracted.
   and macOS via SwiftUI, plus the web.
 - **Editing** a document natively is **iOS/iPadOS only** right now. The editor is built on
   `UITextView`/TextKit 2 for real hanging indent and non-selectable list markers — the two things
-  a naive `AttributedString`-based approach cannot do (see `docs/ARCHITECTURE.md`). `UITextView`
-  has no macOS equivalent; `NSTextView` is a related but distinct API surface this project has
-  not yet built or tested against. If you need native rich-text *editing* on macOS today, this
-  isn't there yet — track it in `docs/ROADMAP.md`.
+  a naive `AttributedString`-based approach cannot do (see `docs/ARCHITECTURE.md`). A native
+  macOS editor on `NSTextView` is committed, in-progress work, not a maybe — see
+  `docs/ROADMAP.md` for status.
   - Editing on the **web** is not iOS-gated at all — Quill runs anywhere a browser does. The web
     package (`web/packages/rich-text-editor`) is real and tested; see `docs/ROADMAP.md` for what's
     left (a build step, a sample app, wider test coverage).
@@ -43,45 +43,28 @@ for exactly what's proven versus newly extracted.
 ## What's in here
 
 ```
-swift/    RichTextCore (Delta model, codec, vocabulary, image cache, sync reconciliation)
-          RichTextEditor (the UITextView-backed editor + its SwiftUI wrapper)
-web/      packages/rich-text-editor — the Quill-based editor package (real, tested)
-fixtures/ The shared Delta corpus both platforms' tests are proven against
-backends/ A real Postgres schema/migration; adapter guidance for other stores lives in docs/backends/
-docs/     Architecture, integration guides, backend contract + per-store guidance, roadmap
-examples/ Sample apps per platform, showing different configuration options (see docs/ROADMAP.md)
+Package.swift  One Swift package, two products: RichTextCore (Delta model, codec, vocabulary,
+               image cache, sync reconciliation) and RichTextEditor (the UITextView-backed
+               editor + its SwiftUI wrapper)
+Sources/       RichTextCore/, RichTextEditor/ — see above
+Tests/         RichTextCoreTests/, RichTextEditorTests/
+web/           packages/rich-text-editor — the Quill-based editor package (real, tested)
+fixtures/      The shared Delta corpus both platforms' tests are proven against
+backends/      A real Postgres schema/migration; adapter guidance for other stores lives in docs/backends/
+docs/          Architecture, integration guides, backend contract + per-store guidance, roadmap
+examples/      Sample apps per platform, showing different configuration options (see docs/ROADMAP.md)
 ```
-
-## Quick start — web
-
-```
-cd web/packages/rich-text-editor && npm install
-```
-
-```tsx
-import { QuillHost, configureImageBaseURL, type Delta } from "@rich-text-cross-platform/editor";
-
-configureImageBaseURL("https://your-bucket.example.com"); // once, at app startup
-
-<QuillHost initialDelta={delta} onReady={(api) => { /* api.getDelta() / api.setDelta(d) */ }} />
-```
-
-See [`web/packages/rich-text-editor/README.md`](web/packages/rich-text-editor/README.md).
 
 ## Quick start — Swift
 
-`RichTextCore` and `RichTextEditor` are two separate Swift packages in this repo
-(`swift/RichTextCore/`, `swift/RichTextEditor/`) — deliberately, so `RichTextCore`'s own tests
-stay fast and simulator-free (see `docs/ROADMAP.md`'s Open Decisions). For now, depend on them by
-local path (e.g. a git submodule, or vendoring this repo) rather than a single remote `.package(url:)`
-add — a git-URL dependency always resolves one `Package.swift` at the repository root, which
-doesn't fit two independently-testable packages in one repo. Publishing each as its own
-repository is the likely eventual fix; not yet decided — see `docs/ROADMAP.md`.
+One package, two products — add it once, pick which product(s) you need:
 
 ```swift
 dependencies: [
-    .package(path: "../rich-text-cross-platform/swift/RichTextCore"),
-    .package(path: "../rich-text-cross-platform/swift/RichTextEditor"),
+    .package(url: "https://github.com/dflax/rich-text-cross-platform", from: "0.1.0")
+],
+targets: [
+    .target(name: "YourApp", dependencies: ["RichTextCore", "RichTextEditor"])
 ]
 ```
 
@@ -102,22 +85,37 @@ struct NoteEditor: View {
 See [`docs/guides/getting-started-ios.md`](docs/guides/getting-started-ios.md) for a complete
 walkthrough including image upload wiring, and [`examples/`](examples/) for full sample apps.
 
+## Quick start — web
+
+```
+cd web/packages/rich-text-editor && npm install
+```
+
+```tsx
+import { QuillHost, configureImageBaseURL, type Delta } from "@rich-text-cross-platform/editor";
+
+configureImageBaseURL("https://your-bucket.example.com"); // once, at app startup
+
+<QuillHost initialDelta={delta} onReady={(api) => { /* api.getDelta() / api.setDelta(d) */ }} />
+```
+
+See [`web/packages/rich-text-editor/README.md`](web/packages/rich-text-editor/README.md).
+
 ## Building and testing this repo
 
-`RichTextCore` (`swift/RichTextCore/`) and `RichTextEditor` (`swift/RichTextEditor/`) are two
-separate Swift packages, deliberately — see `docs/ROADMAP.md`'s Open Decisions. `RichTextCore` is
-plain cross-platform Swift:
+`RichTextCore` is plain cross-platform Swift — the whole suite runs with no simulator:
 
 ```
-cd swift/RichTextCore && swift test
+swift test
 ```
 
-`RichTextEditor` uses a real `UITextView` and can't be exercised by plain `swift test` on macOS —
-it needs an iOS Simulator destination:
+`RichTextEditor` uses a real `UITextView` and can't be exercised by plain `swift test` on macOS
+(its source is gated behind `#if canImport(UIKit)`, so `swift test` still succeeds — it just
+compiles that product to an empty module and runs 0 of its tests). To run everything, including
+`RichTextEditor`'s own tests, use an iOS Simulator destination:
 
 ```
-cd swift/RichTextEditor
-xcodebuild test -scheme RichTextEditor \
+xcodebuild test -scheme RichTextCrossPlatform-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 ```
 
@@ -138,8 +136,7 @@ covers the same contract for MySQL, MongoDB, and Firebase.
 
 ## License
 
-Not yet decided — see the maintainer before treating this as available under any specific terms.
-A `LICENSE` file will replace this section once that's settled (MIT is the leading candidate).
+[MIT](LICENSE) — chosen specifically because it permits commercial use without restriction.
 
 ## Documentation
 
@@ -148,3 +145,8 @@ A `LICENSE` file will replace this section once that's settled (MIT is the leadi
 - [`docs/guides/`](docs/guides/) — integration guides
 - [`docs/backends/`](docs/backends/) — the storage contract and per-database guidance
 - [`PROVENANCE.md`](PROVENANCE.md) — where this code came from and what changed on the way here
+
+## Contributing
+
+Not formally set up yet (no `CONTRIBUTING.md`, no issue templates — see `docs/ROADMAP.md`), but
+issues and PRs are welcome. This is early: expect the public API to move.
