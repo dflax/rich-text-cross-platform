@@ -1,19 +1,24 @@
 # Getting started — iOS/iPadOS
 
-## Add the package
+## Add the packages
+
+`RichTextCore` and `RichTextEditor` are two separate Swift packages (`swift/RichTextCore/`,
+`swift/RichTextEditor/`) — see `docs/ROADMAP.md`'s Open Decisions for why, and for the current
+distribution story (local path only for now, not yet a single remote `.package(url:)` add):
 
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "<this repo's URL once published>", from: "0.1.0")
+    .package(path: "../rich-text-cross-platform/swift/RichTextCore"),
+    .package(path: "../rich-text-cross-platform/swift/RichTextEditor"),
 ],
 targets: [
     .target(name: "YourApp", dependencies: ["RichTextCore", "RichTextEditor"])
 ]
 ```
 
-Or in Xcode: File → Add Package Dependencies…, point at this repo (or a local checkout via "Add
-Local…" while it's unpublished), select both `RichTextCore` and `RichTextEditor`.
+Or in Xcode: File → Add Package Dependencies… → Add Local…, once for each of
+`swift/RichTextCore/` and `swift/RichTextEditor/`.
 
 **Minimum deployment target: iOS 26 / iPadOS 26** — see `docs/ROADMAP.md`'s Open Decisions for
 why, and the plan to lower it.

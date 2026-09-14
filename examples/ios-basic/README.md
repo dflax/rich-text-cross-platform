@@ -23,9 +23,10 @@ to finish this, both quick:
 
 1. **In Xcode**: File → New → Project → iOS → App, name it `RichTextEditorDemo`, no storage/no
    tests. Delete the generated `RichTextEditorDemoApp.swift`/`ContentView.swift`, drag the four
-   files from `RichTextEditorDemo/` in this directory into the project instead. Add this repo's
-   `swift/` package as a local Swift Package dependency (File → Add Package Dependencies… → Add
-   Local…), linking both `RichTextCore` and `RichTextEditor`. Run.
+   files from `RichTextEditorDemo/` in this directory into the project instead. Add both
+   `swift/RichTextCore/` and `swift/RichTextEditor/` as local Swift Package dependencies (File →
+   Add Package Dependencies… → Add Local…, once per package — they're two separate packages, see
+   `docs/ROADMAP.md`'s Open Decisions). Run.
 2. **Ask an agent with Xcode MCP access to retry `XcodeNewProject`** targeting this directory
    with `templateIdentifier: com.apple.dt.unit.multiPlatform.app`, `productName:
    RichTextEditorDemo`, then move these four source files in over the template's generated ones

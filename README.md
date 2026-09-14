@@ -70,9 +70,18 @@ See [`web/packages/rich-text-editor/README.md`](web/packages/rich-text-editor/RE
 
 ## Quick start — Swift
 
+`RichTextCore` and `RichTextEditor` are two separate Swift packages in this repo
+(`swift/RichTextCore/`, `swift/RichTextEditor/`) — deliberately, so `RichTextCore`'s own tests
+stay fast and simulator-free (see `docs/ROADMAP.md`'s Open Decisions). For now, depend on them by
+local path (e.g. a git submodule, or vendoring this repo) rather than a single remote `.package(url:)`
+add — a git-URL dependency always resolves one `Package.swift` at the repository root, which
+doesn't fit two independently-testable packages in one repo. Publishing each as its own
+repository is the likely eventual fix; not yet decided — see `docs/ROADMAP.md`.
+
 ```swift
 dependencies: [
-    .package(url: "<this repo's URL once published>", from: "0.1.0")
+    .package(path: "../rich-text-cross-platform/swift/RichTextCore"),
+    .package(path: "../rich-text-cross-platform/swift/RichTextEditor"),
 ]
 ```
 
@@ -95,18 +104,20 @@ walkthrough including image upload wiring, and [`examples/`](examples/) for full
 
 ## Building and testing this repo
 
-`RichTextCore` is a plain cross-platform Swift package:
+`RichTextCore` (`swift/RichTextCore/`) and `RichTextEditor` (`swift/RichTextEditor/`) are two
+separate Swift packages, deliberately — see `docs/ROADMAP.md`'s Open Decisions. `RichTextCore` is
+plain cross-platform Swift:
 
 ```
-cd swift && swift test
+cd swift/RichTextCore && swift test
 ```
 
 `RichTextEditor` uses a real `UITextView` and can't be exercised by plain `swift test` on macOS —
 it needs an iOS Simulator destination:
 
 ```
-cd swift
-xcodebuild test -scheme RichTextCrossPlatform-Package \
+cd swift/RichTextEditor
+xcodebuild test -scheme RichTextEditor \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 ```
 

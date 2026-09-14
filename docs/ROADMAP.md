@@ -6,16 +6,18 @@ continues. Update this as items move between sections; don't let it silently go 
 
 ## Done and verified
 
-- **`RichTextCore`** — ported from the fork point unchanged in logic (see `PROVENANCE.md`).
-  87 tests green (83 `RichTextCoreTests` + 4 `RichTextEditorTests`), verified via
-  `xcodebuild test -scheme RichTextCrossPlatform-Package -destination 'platform=iOS Simulator,…'`.
-- **`RichTextEditor`** — extracted and decoupled from the fork point's backend-specific plumbing.
-  Public API: `RichTextEditor` (SwiftUI view), `RichTextEditorConfiguration`,
-  `RichTextImageUploading`, `ImageDownscaling`. Builds and its (small, new) test suite passes on
-  iOS Simulator.
+- **`RichTextCore`** (`swift/RichTextCore/`) — ported from the fork point unchanged in logic (see
+  `PROVENANCE.md`). 83 tests green via plain `swift test` — cross-platform, no simulator needed.
+- **`RichTextEditor`** (`swift/RichTextEditor/`) — extracted and decoupled from the fork point's
+  backend-specific plumbing, packaged separately from `RichTextCore` (see this doc's Open
+  Decisions for why) with a local path dependency on it. Public API: `RichTextEditor` (SwiftUI
+  view), `RichTextEditorConfiguration`, `RichTextImageUploading`, `ImageDownscaling`. 4 tests
+  green via `xcodebuild test -scheme RichTextEditor -destination 'platform=iOS Simulator,…'`
+  (real `UITextView`, can't run under plain `swift test` on macOS).
 - **Fixture corpus** — a shared copy at the repo root (`fixtures/`), the same one both the Swift
   package's own resource-bundled copy and the web package's tests are proven against. The two
-  Swift-side copies (repo root and `swift/Tests/.../Resources/fixtures`) need to be kept in sync
+  Swift-side copies (repo root and `swift/RichTextCore/Tests/.../Resources/fixtures`) need to be
+  kept in sync
   by hand until that's automated — see "Scoped, not yet built" below.
 - **Postgres backend** — see `backends/postgres/`.
 - **Web package** (`web/packages/rich-text-editor`) — `delta.ts`/`vocabulary.ts`/`quill-setup.ts`/
@@ -49,7 +51,7 @@ Ordered by what unblocks the most other work.
    every coalescing/idempotence/image-edge-case assertion `RichTextCoreTests` covers on the Swift
    side. See that package's own `README.md`.
 5. **Automate keeping the two Swift-side fixture copies in sync** (repo-root `fixtures/`, used by
-   the web package's tests, and `swift/Tests/RichTextCoreTests/Resources/fixtures`, required by
+   the web package's tests, and `swift/RichTextCore/Tests/RichTextCoreTests/Resources/fixtures`, required by
    SPM's resource-bundling rules) — a script or a pre-commit check, so they can't silently drift.
 6. **U1/U2/U6/U7-equivalent hands-on verification on real hardware**, ported from the fork
    point's own outstanding items — hanging indent and non-selectable markers under live editing,
@@ -58,7 +60,7 @@ Ordered by what unblocks the most other work.
    that repo's own `TASK-034`); it needs redoing here since this is a different package with a
    different public API surface, not the same code under a new name.
 7. **CI** — GitHub Actions running `swift test` for `RichTextCore`,
-   `xcodebuild test -scheme RichTextCrossPlatform-Package -destination 'platform=iOS Simulator,…'`
+   `xcodebuild test -scheme RichTextEditor -destination 'platform=iOS Simulator,…'` (from `swift/RichTextEditor/`)
    for the full Swift suite, and `npm test`/`npm run typecheck` for the web package, on every PR.
    Not yet set up.
 8. **CONTRIBUTING.md, issue/PR templates, a real `LICENSE`** — open-source hygiene not yet done;
@@ -67,6 +69,15 @@ Ordered by what unblocks the most other work.
 
 ## Open decisions, not yet made
 
+- **How to distribute two Swift packages from one repo.** `RichTextCore` and `RichTextEditor`
+  are separate packages (`swift/RichTextCore/`, `swift/RichTextEditor/`) so `RichTextCore`'s own
+  `swift test` stays fast and simulator-free — a single combined package made *every* `swift
+  test` invocation try (and fail on macOS) to build the UIKit-only editor target too, since `swift
+  test` always builds a package's entire target graph regardless of `--filter`. The real
+  consequence: a remote `.package(url:)` dependency always resolves one `Package.swift` at the
+  repository root, so a consumer can't add both packages from this one repo via a normal remote
+  dependency today — only by local path (submodule/vendoring), as `README.md`'s Quick Start
+  shows. Splitting into two published repositories is the likely eventual fix; not yet decided.
 - **License.** MIT is the default lean (permissive, standard for exactly this kind of dev tool);
   Apache-2.0's explicit patent grant is the other real candidate given commercial consumers
   (this app). Needs the maintainer's call, not an assumption baked in silently.
