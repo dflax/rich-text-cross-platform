@@ -13,42 +13,55 @@ continues. Update this as items move between sections; don't let it silently go 
   Public API: `RichTextEditor` (SwiftUI view), `RichTextEditorConfiguration`,
   `RichTextImageUploading`, `ImageDownscaling`. Builds and its (small, new) test suite passes on
   iOS Simulator.
-- **Fixture corpus** — moved into a proper SPM resource bundle rather than a repo-root-relative
-  path, so the package doesn't assume anything about a consumer's checkout layout.
+- **Fixture corpus** — a shared copy at the repo root (`fixtures/`), the same one both the Swift
+  package's own resource-bundled copy and the web package's tests are proven against. The two
+  Swift-side copies (repo root and `swift/Tests/.../Resources/fixtures`) need to be kept in sync
+  by hand until that's automated — see "Scoped, not yet built" below.
 - **Postgres backend** — see `backends/postgres/`.
+- **Web package** (`web/packages/rich-text-editor`) — `delta.ts`/`vocabulary.ts`/`quill-setup.ts`/
+  `image-key.ts`/`QuillHost.tsx` ported from the fork point's `web/` app and genericized (no more
+  B2-specific naming, a configurable image base URL instead of a hardcoded bucket). 22 tests
+  green (`npm test`), including byte-identical round-trip and vocabulary-membership checks
+  against the *same* fixture corpus the Swift package uses — the actual cross-platform-
+  consistency proof, not just a claim. `npx tsc --noEmit` clean. Ships as TypeScript source
+  (no build step yet) — see below.
+- **`docs/backends/mysql.md`, `mongodb.md`, `firebase.md`** — written guidance mapping the
+  storage contract (`docs/backends/README.md`) onto each store.
 
 ## Scoped, not yet built
 
 Ordered by what unblocks the most other work.
 
-1. **iOS sample app(s) demonstrating `RichTextEditorConfiguration` variants** — a minimal
-   "just edit text locally" app, then a second configuration showing image upload wired to a
-   real (or mock) `RichTextImageUploading`, and a third showing a custom toolbar via
-   `configuration.toolbar`. This is the fastest way to find API rough edges before external
-   users do. See `examples/`.
-2. **Web package** (`web/packages/rich-text-editor`) — a Quill 2.x wrapper enforcing the same
-   vocabulary this Swift package enforces, reading/writing the same `Delta` JSON. The fork
-   point's `web/` app has a working Quill setup with constrained toolbar + custom image upload
-   handling to port from; it has not been touched in this extraction yet. Needs its own
-   vocabulary-enforcement story (Quill's own format/toolbar restriction APIs, not
-   `NSTextStorageDelegate` — different platform, same requirement) and its own round-trip tests
-   against the *same* fixture corpus this package uses, so both platforms are proven against
-   identical bytes (see `docs/ARCHITECTURE.md`'s "one document, one mutable copy" reasoning —
-   the cross-platform-consistency claim only means something if both sides use the same corpus).
-3. **`docs/backends/mysql.md`, `mongodb.md`, `firebase.md`** — written guidance mapping the same
-   storage contract (`docs/backends/README.md`) onto each store. Deliberately guidance, not
-   shipped adapter code — see that doc for why.
-4. **Web sample app** mirroring the iOS one's configuration variants, once the web package exists.
-5. **U1/U2/U6/U7-equivalent hands-on verification on real hardware**, ported from the fork
+1. **Finish wrapping `examples/ios-basic`'s source in a real `.xcodeproj`.** The four Swift files
+   (minimal / with-images / custom-toolbar / app entry) are written and manually verified against
+   the real `RichTextEditor` API; the project-scaffolding tool needed a one-time manual approval
+   click that wasn't available when this was written. See `examples/ios-basic/README.md` for the
+   two-minute manual step, or have a session with Xcode MCP access retry `XcodeNewProject`.
+2. **A web sample app** mirroring the iOS one's three configuration variants
+   (`configureImageBaseURL`, a demo `QuillHost` usage, a custom-toolbar-equivalent — Quill's own
+   toolbar module config already *is* the "custom toolbar" story, so this is more "show it" than
+   "build new capability").
+3. **A build step for the web package** producing a publishable `dist/` (tsup or plain `tsc`) —
+   it currently ships as source, `main`/`types` pointing straight at `src/index.ts`.
+4. **Port the fork point's fuller round-trip test suite** to the web package —
+   `test/round-trip.test.ts` proves byte-identity and vocabulary membership across the whole
+   corpus (22 tests), which is the actual cross-platform-consistency proof, but doesn't yet cover
+   every coalescing/idempotence/image-edge-case assertion `RichTextCoreTests` covers on the Swift
+   side. See that package's own `README.md`.
+5. **Automate keeping the two Swift-side fixture copies in sync** (repo-root `fixtures/`, used by
+   the web package's tests, and `swift/Tests/RichTextCoreTests/Resources/fixtures`, required by
+   SPM's resource-bundling rules) — a script or a pre-commit check, so they can't silently drift.
+6. **U1/U2/U6/U7-equivalent hands-on verification on real hardware**, ported from the fork
    point's own outstanding items — hanging indent and non-selectable markers under live editing,
-   cross-editor consistency (well, cross-*platform* now: iOS-authored ↔ web-read once the web
-   package exists), full toolbar/list-editing parity. The fork point never finished this pass
-   before extraction (see that repo's own `TASK-034`); it needs redoing here since this is a
-   different package with a different public API surface, not the same code under a new name.
-6. **CI** — GitHub Actions running `swift test` for `RichTextCore` and
+   cross-editor consistency (well, cross-*platform* now: iOS-authored ↔ web-read), full
+   toolbar/list-editing parity. The fork point never finished this pass before extraction (see
+   that repo's own `TASK-034`); it needs redoing here since this is a different package with a
+   different public API surface, not the same code under a new name.
+7. **CI** — GitHub Actions running `swift test` for `RichTextCore`,
    `xcodebuild test -scheme RichTextCrossPlatform-Package -destination 'platform=iOS Simulator,…'`
-   for the full suite, on every PR. Not yet set up.
-7. **CONTRIBUTING.md, issue/PR templates, a real `LICENSE`** — open-source hygiene not yet done;
+   for the full Swift suite, and `npm test`/`npm run typecheck` for the web package, on every PR.
+   Not yet set up.
+8. **CONTRIBUTING.md, issue/PR templates, a real `LICENSE`** — open-source hygiene not yet done;
    see README.md's License section for the one open decision (MIT vs. something else) blocking
    the last of these.
 

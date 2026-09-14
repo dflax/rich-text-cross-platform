@@ -13,9 +13,12 @@ handling. Quill Delta is a small, well-specified JSON format with the structure 
 needs and none of Markdown's ambiguity; this project's job is a matching pair of first-class
 native editors around it, plus enough backend-agnostic contract that it isn't tied to one stack.
 
-**Status: early — see [`docs/ROADMAP.md`](docs/ROADMAP.md).** The Swift package is real, tested,
-and builds; the web package, sample apps, and backend adapters beyond Postgres are scoped but not
-all built yet. Don't point production traffic at this yet — see [`PROVENANCE.md`](PROVENANCE.md)
+**Status: early — see [`docs/ROADMAP.md`](docs/ROADMAP.md).** The Swift package and the web
+package are both real and tested — 87 Swift tests, 22 web tests, the web tests proven against the
+*same* fixture corpus the Swift side uses, which is the actual cross-platform-consistency proof.
+Not yet done: sample apps aren't fully wired into runnable projects yet, the web package has no
+build step for publishing, and backend adapters beyond a real Postgres schema are guidance, not
+shipped code. Don't point production traffic at this yet — see [`PROVENANCE.md`](PROVENANCE.md)
 for exactly what's proven versus newly extracted.
 
 ## Scope, read carefully
@@ -29,7 +32,8 @@ for exactly what's proven versus newly extracted.
   not yet built or tested against. If you need native rich-text *editing* on macOS today, this
   isn't there yet — track it in `docs/ROADMAP.md`.
   - Editing on the **web** is not iOS-gated at all — Quill runs anywhere a browser does. The web
-    package is scoped (see `docs/ROADMAP.md`) but not yet built out in this repository.
+    package (`web/packages/rich-text-editor`) is real and tested; see `docs/ROADMAP.md` for what's
+    left (a build step, a sample app, wider test coverage).
 - **Vocabulary is deliberately small**: bold, italic, underline, strikethrough, links, headers
   (two levels), bulleted/numbered lists, and images with alt text. No tables, no code blocks, no
   arbitrary colors or fonts, no nested lists. This is a feature, not a gap to be filled — see
@@ -41,11 +45,28 @@ for exactly what's proven versus newly extracted.
 ```
 swift/    RichTextCore (Delta model, codec, vocabulary, image cache, sync reconciliation)
           RichTextEditor (the UITextView-backed editor + its SwiftUI wrapper)
-web/      Quill-based editor package + example app (scoped, see docs/ROADMAP.md)
+web/      packages/rich-text-editor — the Quill-based editor package (real, tested)
+fixtures/ The shared Delta corpus both platforms' tests are proven against
 backends/ A real Postgres schema/migration; adapter guidance for other stores lives in docs/backends/
 docs/     Architecture, integration guides, backend contract + per-store guidance, roadmap
-examples/ Full sample apps per platform, showing different RichTextEditorConfiguration options
+examples/ Sample apps per platform, showing different configuration options (see docs/ROADMAP.md)
 ```
+
+## Quick start — web
+
+```
+cd web/packages/rich-text-editor && npm install
+```
+
+```tsx
+import { QuillHost, configureImageBaseURL, type Delta } from "@rich-text-cross-platform/editor";
+
+configureImageBaseURL("https://your-bucket.example.com"); // once, at app startup
+
+<QuillHost initialDelta={delta} onReady={(api) => { /* api.getDelta() / api.setDelta(d) */ }} />
+```
+
+See [`web/packages/rich-text-editor/README.md`](web/packages/rich-text-editor/README.md).
 
 ## Quick start — Swift
 
@@ -87,6 +108,13 @@ it needs an iOS Simulator destination:
 cd swift
 xcodebuild test -scheme RichTextCrossPlatform-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+```
+
+The web package is a plain Node/Vitest project:
+
+```
+cd web/packages/rich-text-editor
+npm install && npm test && npm run typecheck
 ```
 
 ## Backend

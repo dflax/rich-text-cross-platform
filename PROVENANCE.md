@@ -45,6 +45,17 @@ entry point), was written to take a plain `Binding<Delta>`, an `ImageStore`, and
 `RichTextImageUploading` protocol conformance instead of the POC's `AppServices`/`FixtureLibrary`-
 specific plumbing. See `docs/ARCHITECTURE.md` for the resulting shape.
 
+`web/packages/rich-text-editor/` — the fork point's `web/src/lib/{delta,vocabulary,quill-setup}.ts`
+and `web/src/components/QuillHost.tsx`, ported and genericized the same way as the Swift side:
+`b2.ts`'s `publicURL`/hardcoded bucket constant became `image-key.ts`'s `resolveImageURL`/
+`configureImageBaseURL` (no B2-specific logic there either — same "GET a key against a
+configurable base URL" shape as `PublicURLImageFetcher`), and `@/lib/...` Next.js path aliases
+became plain relative imports so this is an ordinary, framework-agnostic package rather than
+something that only works inside the fork point's specific Next.js app. Not ported: the fork
+point's Next.js pages (`corpus`, `roundtrip`, `documents` demo routes) and its Supabase-specific
+sync/auth code (`sync.ts`, `supabase.ts`, `supabase-browser.ts`) — same "contract, not one
+backend's implementation" posture as the Swift side.
+
 ## What was deliberately not ported
 
 - `DeltaCodec.swift`, `Segmentation.swift`, `ListMarkerSync.swift`, `FormattingDefinition.swift` —
