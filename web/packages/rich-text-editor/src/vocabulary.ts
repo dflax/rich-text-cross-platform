@@ -8,8 +8,9 @@
  * the database, so this module is the web client's real enforcement point and the
  * allowlist is only the first, coarse filter.
  *
- * Ported rule-for-rule from Swift rather than re-derived from the PRD: the Swift version
- * encodes three structural rules the PRD does not state (see fixtures/README.md).
+ * Ported rule-for-rule from Swift rather than re-derived independently: the Swift version
+ * encodes three structural rules not obvious from the vocabulary table alone (see
+ * fixtures/README.md).
  */
 
 import {
@@ -220,7 +221,7 @@ export function looksLikeURL(value: string): boolean {
 
 export interface VocabularyOptions {
   /**
-   * `mergeField` embeds are a P10 feasibility spike, not something a client may author,
+   * `mergeField` embeds are a read-path feasibility spike, not something a client may author,
    * so they are rejected unless explicitly allowed.
    */
   allowingMergeFields?: boolean;
@@ -256,7 +257,7 @@ export function vocabularyViolations(delta: Delta, options: VocabularyOptions = 
           violation(
             "mergeFieldNotEnabled",
             index,
-            `Op ${index} is a mergeField embed, which is a P10 spike shape and not part of the ` +
+            `Op ${index} is a mergeField embed, a read-path feasibility spike shape, not part of the ` +
               `authorable vocabulary.`,
           ),
         );
@@ -303,7 +304,7 @@ export function vocabularyViolations(delta: Delta, options: VocabularyOptions = 
             ),
           );
         } else if (next.attributes) {
-          // Found while writing the fixture corpus, and not stated in the PRD: the newline
+          // Found while writing the fixture corpus, and easy to miss: the newline
           // that terminates an image must be bare. Split drops it and reassemble emits a
           // plain "\n" in its place, so a header or list attribute riding on it would
           // vanish on the first native edit. An image therefore cannot itself be a list

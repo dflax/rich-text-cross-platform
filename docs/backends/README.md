@@ -30,4 +30,4 @@ don't talk to a database directly — they work in terms of a `Delta` value, an
 
 - [`backends/postgres/`](../../backends/postgres/) — a real, working schema + migration.
 - [`mysql.md`](mysql.md), [`mongodb.md`](mongodb.md), [`firebase.md`](firebase.md) — guidance
-  mapping the same contract onto each store. **Not yet written** — see `docs/ROADMAP.md`.
+  mapping the same contract onto each store.

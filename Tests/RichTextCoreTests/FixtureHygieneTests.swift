@@ -11,12 +11,12 @@ import Testing
 @Suite("Fixture corpus hygiene")
 struct FixtureHygieneTests {
 
-    @Test("The corpus is present and covers the cases the Build Order names")
+    @Test("The corpus is present and covers the cases the vocabulary needs")
     func corpusIsPresent() throws {
         let names = Set(FixtureCorpus.all.map(\.name))
         #expect(names.count >= 19, "Corpus looks truncated; found \(names.count) fixtures.")
 
-        // Build Order step 3's named text cases.
+        // The named text edge cases.
         for required in [
             "adjacent-identical-runs", "empty-document", "blank-lines",
             "multi-paragraph", "link-inside-bold",
@@ -24,7 +24,7 @@ struct FixtureHygieneTests {
             #expect(names.contains(required), "Missing text edge case fixture: \(required)")
         }
 
-        // Build Order step 4's named image cases.
+        // The named image edge cases.
         for required in [
             "leading-image", "trailing-image", "adjacent-images",
             "image-only", "image-in-bulleted-region",
@@ -100,7 +100,7 @@ struct FixtureHygieneTests {
     @Test("The mergeField spike fixture is rejected unless explicitly allowed")
     func mergeFieldIsNotAuthorable() throws {
         let spike = FixtureCorpus.spike
-        #expect(!spike.isEmpty, "Expected the P10 spike fixture to exist.")
+        #expect(!spike.isEmpty, "Expected the mergeField spike fixture to exist.")
         for fixture in spike {
             #expect(
                 fixture.delta.vocabularyViolations().contains(where: {
@@ -120,7 +120,7 @@ struct FixtureHygieneTests {
             try Delta.decode(json: Data(#"{"ops":[{"retain":3}]}"#.utf8))
         }
         // An embed type nobody has taught the renderer about. Silently skipping it would
-        // lose content, which is the exact failure P6 rules out.
+        // lose content, which is exactly the failure this decoder's strictness rules out.
         #expect(throws: DeltaError.unknownEmbed(index: 0, key: "video")) {
             try Delta.decode(json: Data(#"{"ops":[{"insert":{"video":"x"}}]}"#.utf8))
         }
@@ -156,7 +156,7 @@ struct FixtureHygieneTests {
         #expect(!delta.canonicalJSONString().contains("\\/"))
     }
 
-    /// The rule the PRD does not state, found while authoring the corpus.
+    /// A rule not obvious from the vocabulary table alone, found while authoring the corpus.
     @Test("An image's terminating newline may not carry a block attribute")
     func imageCannotBeAListItem() throws {
         let json = #"{"ops":[{"insert":{"image":"k"}},{"insert":"\n","attributes":{"list":"bullet"}}]}"#

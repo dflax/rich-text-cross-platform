@@ -8,10 +8,10 @@ import UIKit
 import AppKit
 #endif
 
-/// `NSTextList` instance identity, reconciled by `NSDeltaCodec.applyVisualBlockStyling` — see
-/// `docs/PRD-uikit-comparison-editor.md` §2/Testing. This is a rendering-quality concern, not a
-/// round-trip one: `encode` never reads `NSTextList` at all, only `richTextBlockToken`, so a
-/// bug here could never show up in `NSDeltaCodecTests` and needs its own coverage.
+/// `NSTextList` instance identity, reconciled by `NSDeltaCodec.applyVisualBlockStyling`. This is
+/// a rendering-quality concern, not a round-trip one: `encode` never reads `NSTextList` at all,
+/// only `richTextBlockToken`, so a bug here could never show up in `NSDeltaCodecTests` and needs
+/// its own coverage.
 @Suite("NSTextList instance identity and renumbering")
 struct NSListReconciliationTests {
 
@@ -101,8 +101,8 @@ struct NSListReconciliationTests {
         #expect(lists[0] !== lists[2], "A bullet run broken by a non-list paragraph (even an image's) must not silently share an instance across the break.")
     }
 
-    /// Regression for a real bug found by hands-on testing (U7, `docs/PRD-uikit-comparison-editor
-    /// .md`): every test above decodes a fixture and checks the *static* result, which always
+    /// Regression for a real bug found by hands-on testing: every test above decodes a fixture
+    /// and checks the *static* result, which always
     /// goes through `applyVisualBlockStyling` once at decode time regardless of this bug. Live
     /// editing is different — a plain character deletion (no toolbar action) reports a
     /// zero-length post-edit range to `NSTextStorageDelegate`, and `clampToVocabulary` used to
@@ -110,7 +110,7 @@ struct NSListReconciliationTests {
     /// interrupting paragraph between two ordered lists left both runs' stale, separate
     /// `NSTextList` instances untouched — they'd never renumber into one continuous list until
     /// some *other* edit (e.g. a toolbar list toggle) happened to trigger reconciliation again.
-    @Test("A live delete of an interrupting paragraph — not just a static decode — merges the two ordered runs into one shared instance via the U5 backstop")
+    @Test("A live delete of an interrupting paragraph — not just a static decode — merges the two ordered runs into one shared instance via the vocabulary-clamping backstop")
     func liveDeleteOfInterruptingParagraphMergesListsViaBackstop() throws {
         let delta = try FixtureCorpus.named("ordered-list-restart").delta
         let decoded = try NSDeltaCodec.decode(delta.ops, image: { _ in nil })

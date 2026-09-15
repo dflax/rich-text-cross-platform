@@ -145,8 +145,7 @@ struct RichTextTextView: UIViewRepresentable {
         view.writingToolsBehavior = .none
         view.textContainerInset = UIEdgeInsets(top: 8, left: 4, bottom: 8, right: 4)
         view.backgroundColor = .clear
-        // Without this, UITextView scrolls internally and refuses to grow to fit its content —
-        // the exact same load-bearing line `SegmentTextEditor` needed for `TextEditor`.
+        // Without this, UITextView scrolls internally and refuses to grow to fit its content.
         view.isScrollEnabled = false
         view.setContentHuggingPriority(.required, for: .vertical)
 

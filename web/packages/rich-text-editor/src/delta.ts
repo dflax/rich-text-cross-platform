@@ -20,7 +20,7 @@ export type Attributes = Record<string, AttributeValue>;
 
 // MARK: - Embeds
 
-/** Images are the only embed in the shipped vocabulary. `mergeField` is the P10 spike. */
+/** Images are the only embed in the shipped vocabulary. `mergeField` is a read-path spike. */
 export type Embed = { image: string } | { mergeField: string };
 
 const EMBED_KEYS = ["image", "mergeField"] as const;

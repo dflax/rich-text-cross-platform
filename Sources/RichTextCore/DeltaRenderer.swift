@@ -16,7 +16,9 @@ public struct Block: Identifiable, Equatable, Sendable {
         /// Carries its own number so the view never has to reconstruct list numbering.
         case ordered(Int)
         case image(key: String, alt: String?)
-        /// P10 spike shape. Rendered as a distinct, non-editable chip.
+        /// A read-path feasibility spike shape, not authorable (see
+        /// `Vocabulary.vocabularyViolations(allowingMergeFields:)`). Rendered as a distinct,
+        /// non-editable chip.
         case mergeField(name: String)
     }
 

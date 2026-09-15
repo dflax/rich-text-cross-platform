@@ -7,7 +7,7 @@ import Foundation
 /// The vocabulary (see `Vocabulary`) only ever produces three shapes: `true` for the
 /// inline toggles, a string for `link` and `alt`, and an integer for `header`. Anything
 /// else is rejected at decode time rather than silently coerced — a silently-dropped
-/// attribute is exactly the content-loss failure mode P6 exists to rule out.
+/// attribute is exactly the content-loss failure mode this format exists to rule out.
 public enum AttributeValue: Equatable, Hashable, Sendable {
     case bool(Bool)
     case string(String)
@@ -32,7 +32,7 @@ public struct BlockToken: Hashable, Sendable {
 /// An `insert` whose value is an object rather than a string.
 ///
 /// Images are the only embed in the shipped vocabulary. `mergeField` exists solely for
-/// the P10 feasibility spike and is not part of the vocabulary a client may author.
+/// a read-path feasibility spike and is not part of the vocabulary a client may author.
 public enum Embed: Equatable, Hashable, Sendable {
     case image(key: String)
     case mergeField(name: String)
@@ -55,7 +55,7 @@ public enum Embed: Equatable, Hashable, Sendable {
 
 // MARK: - Op
 
-/// A single Delta operation. This POC only ever stores documents, never diffs, so
+/// A single Delta operation. This package only ever stores documents, never diffs, so
 /// `insert` is the only operation kind — `retain` and `delete` cannot appear.
 public struct Op: Equatable, Hashable, Sendable {
     public enum Insert: Equatable, Hashable, Sendable {
@@ -202,7 +202,7 @@ public enum DeltaError: Error, Equatable, CustomStringConvertible {
         case .unsupportedAttributeValue(let i, let name):
             "Op \(i)'s attribute \"\(name)\" has a value that is not a bool, string, or integer."
         case .retainOrDeleteNotSupported(let i):
-            "Op \(i) is a retain or delete. This POC stores documents, never diffs."
+            "Op \(i) is a retain or delete. This package stores documents, never diffs."
         }
     }
 }
@@ -214,7 +214,7 @@ extension Delta {
     ///
     /// Deliberately strict: anything it does not understand is an error rather than a
     /// silently ignored op. A parser that skips what it cannot represent loses content,
-    /// and the whole point of P6 is that content is never lost.
+    /// and the whole point of a canonical, closed format is that content is never lost.
     public static func decode(json data: Data) throws -> Delta {
         let root = try JSONSerialization.jsonObject(with: data, options: [])
         guard let object = root as? [String: Any] else { throw DeltaError.notAnObject }
@@ -290,7 +290,7 @@ extension Delta {
 // MARK: - Canonical encoding
 
 extension Delta {
-    /// Serializes to the POC's canonical byte form.
+    /// Serializes to this package's canonical byte form.
     ///
     /// "Byte-identical" in the round-trip tests means these bytes. The encoder is
     /// deliberately *faithful*, not normalizing: it emits exactly the ops it is given, in

@@ -8,10 +8,9 @@ import UIKit
 import AppKit
 #endif
 
-/// `NSDeltaCodec`'s round-trip obligation is identical to `DeltaCodec`'s — see
-/// `docs/PRD-uikit-comparison-editor.md` U3 — and unlike the original codec this one carries
-/// images through directly rather than relying on a prior segmentation pass, so the image
-/// fixtures are part of this corpus too, not a separate concern.
+/// `NSDeltaCodec`'s round-trip obligation is `encode(decode(d)) == d`, byte-identical — and
+/// since it carries images through directly rather than relying on a prior segmentation pass,
+/// the image fixtures are part of this corpus too, not a separate concern.
 @Suite("NSDeltaCodec round trip: encode(decode(d)) == d")
 struct NSDeltaCodecTests {
 
@@ -124,7 +123,7 @@ struct NSDeltaCodecTests {
     @Test("A missing newline after an image is restored rather than producing an invalid Delta")
     func missingImageTerminatorIsRestored() throws {
         // Simulates a live edit that left text directly after an attachment on the same line —
-        // the ordinary-typing hazard the PRD's inline-image architecture introduces.
+        // the ordinary-typing hazard of embedding images inline introduces exactly this.
         let text = NSMutableAttributedString(string: "before\n")
         let attachment = NSTextAttachment()
         let attachmentRun = NSMutableAttributedString(attachment: attachment)
@@ -163,8 +162,9 @@ struct NSDeltaCodecTests {
 
     /// Regression for a real bug found by hands-on device testing: a document mid-typing (the
     /// last line has no trailing "\n" yet, because the user simply hasn't pressed Return) must
-    /// never trip `documentDoesNotEndWithNewline` — `SegmentedDocument.reassemble` already
-    /// self-heals this exact case on the AttributedString side.
+    /// never trip `documentDoesNotEndWithNewline` — `encode` self-heals this exact case, since
+    /// Quill terminates every document with a newline but a live `UITextView` has no such
+    /// guarantee mid-edit.
     @Test("A document with no trailing newline yet — ordinary mid-typing state — is normalized, not flagged invalid")
     func missingTrailingNewlineIsRestored() throws {
         let text = NSMutableAttributedString(string: "Entry 4")

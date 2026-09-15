@@ -5,8 +5,8 @@ import SwiftUI
 ///
 /// ## Why this exists
 ///
-/// P4 is specific: reading a document must support "real, native, continuous drag-to-select
-/// text … **no per-paragraph limitation**." That rules out the obvious implementation. A
+/// The requirement here is specific: reading a document must support "real, native, continuous
+/// drag-to-select text … **no per-paragraph limitation**." That rules out the obvious implementation. A
 /// `VStack` of one `Text` per block with `.textSelection(.enabled)` gives selection *within*
 /// each `Text` and nowhere across them — which is exactly the per-paragraph limitation the
 /// production app is being criticised for, reproduced in a new shape.

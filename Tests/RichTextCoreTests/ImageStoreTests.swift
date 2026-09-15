@@ -2,8 +2,8 @@ import Foundation
 import Testing
 @testable import RichTextCore
 
-/// Build Order step 5. The cache is what makes P8 (offline correctness) possible, so the
-/// tests here are mostly about what happens when the network is *not* available.
+/// The cache is what makes offline correctness possible, so the tests here are mostly about
+/// what happens when the network is *not* available.
 @Suite("ImageStore")
 struct ImageStoreTests {
 
@@ -37,7 +37,7 @@ struct ImageStoreTests {
 
     /// Caches can be purged by the system at any time. If images lived there, a document that
     /// rendered yesterday would come back with holes today and nothing in the app could
-    /// explain it — which is exactly the offline guarantee P8 is supposed to establish.
+    /// explain it — which is exactly the offline guarantee this store is supposed to establish.
     @Test("The default cache lives in Application Support, never in Caches")
     func defaultDirectoryIsApplicationSupport() throws {
         let directory = try ImageStore.defaultDirectory()
@@ -84,8 +84,8 @@ struct ImageStoreTests {
 
     // MARK: - Offline behaviour, which is the whole point
 
-    /// The P8 guarantee, stated directly: once an image is cached, the network is not on the
-    /// read path at all, so it failing changes nothing.
+    /// The offline guarantee, stated directly: once an image is cached, the network is not on
+    /// the read path at all, so it failing changes nothing.
     @Test("A cached image is served with the fetcher failing every request")
     func cachedImagesSurviveGoingOffline() async throws {
         let fetcher = CountingFetcher()

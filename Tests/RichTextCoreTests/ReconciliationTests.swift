@@ -2,11 +2,11 @@ import Foundation
 import Testing
 @testable import RichTextCore
 
-/// Build Order step 9: the three-way comparison sync rests on.
+/// The three-way comparison sync rests on.
 ///
 /// Every branch is exercised, including the two that must *not* write. A reconciler that
-/// silently picks a winner is exactly the automatic conflict resolution `PRD.md` lists as a
-/// Non-Goal, so "all three differ" is asserted to surface rather than resolve.
+/// silently picks a winner is exactly the automatic conflict resolution this library
+/// deliberately never does, so "all three differ" is asserted to surface rather than resolve.
 @Suite("Reconciliation: base/mine/theirs")
 struct ReconciliationTests {
 
@@ -18,7 +18,7 @@ struct ReconciliationTests {
     private let localEdit = Delta(ops: [.text("Hello, local\n")]).canonicalJSON()
     private let remoteEdit = Delta(ops: [.text("Hello, remote\n")]).canonicalJSON()
 
-    // MARK: - The three branches the PRD names
+    // MARK: - The three named branches
 
     @Test("base == theirs, mine moved → push")
     func pushesWhenOnlyLocalChanged() {

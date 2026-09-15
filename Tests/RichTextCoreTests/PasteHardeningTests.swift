@@ -8,11 +8,11 @@ import UIKit
 import AppKit
 #endif
 
-/// U5 (`docs/PRD-uikit-comparison-editor.md`): formatting-constraint enforcement replicated and
-/// hardened against paste. Two independent layers, each tested here: `sanitizedForPaste` (the
-/// primary control, applied at the point of insertion) and `clampToVocabulary`/
-/// `VocabularyTextStorageDelegate` (the defensive backstop for anything that slips past it).
-@Suite("Paste hardening & vocabulary clamping (U5)")
+/// Formatting-constraint enforcement, hardened against paste. Two independent layers, each
+/// tested here: `sanitizedForPaste` (the primary control, applied at the point of insertion) and
+/// `clampToVocabulary`/`VocabularyTextStorageDelegate` (the defensive backstop for anything that
+/// slips past it). See `docs/guides/vocabulary-enforcement.md`.
+@Suite("Paste hardening & vocabulary clamping")
 struct PasteHardeningTests {
 
     @Test("sanitizedForPaste keeps only bold/italic/underline/strike/link, discarding everything else")
@@ -137,8 +137,7 @@ struct PasteHardeningTests {
         // arriving again while this delegate's own fixup pass for a prior edit is still on the
         // call stack. (Empirically, this SDK doesn't recurse into the delegate for attribute-only
         // mutations made from inside its own callback — Apple's documented pattern for exactly
-        // this kind of clamp — but the guard must hold regardless of that implementation detail,
-        // per the PRD's explicit ask for one.)
+        // this kind of clamp — but the guard must hold regardless of that implementation detail.)
         delegate.isClamping = true
         delegate.textStorage(storage, didProcessEditing: [], range: NSRange(location: 0, length: 0), changeInLength: 0)
         #expect(delegate.callbackInvocationCount == 1)

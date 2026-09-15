@@ -32,4 +32,4 @@ to finish this, both quick:
    and add the local package dependency the same way.
 
 Once wrapped, this needs the same deployment target as the `RichTextEditor` product (iOS 26 —
-see `docs/ROADMAP.md`'s Open Decisions for why, and the plan to lower it).
+see `docs/ROADMAP.md`'s Decided section: this is a deliberate floor, not being lowered).

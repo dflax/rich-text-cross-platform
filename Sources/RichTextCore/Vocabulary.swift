@@ -3,9 +3,8 @@ import Foundation
 /// The shared formatting vocabulary, and the structural rules that go with it.
 ///
 /// Both clients are constrained to exactly this set — nothing outside it may ever be
-/// produced by either editor. The PRD is explicit that every attribute added is a new
-/// round-trip failure mode, so this type exists to make "in the vocabulary" a thing that
-/// is checked rather than assumed.
+/// produced by either editor. Every attribute added is a new round-trip failure mode, so
+/// this type exists to make "in the vocabulary" a thing that is checked rather than assumed.
 public enum Vocabulary {
     /// Attributes that live on a text run.
     public static let inlineAttributes: Set<String> = ["bold", "italic", "underline", "strike", "link"]
@@ -68,7 +67,7 @@ public enum VocabularyViolation: Error, Equatable, CustomStringConvertible {
         case .emptyTextInsert(let i):
             "Op \(i) inserts an empty string, which carries no content and is never canonical."
         case .mergeFieldNotEnabled(let i):
-            "Op \(i) is a mergeField embed, which is a P10 spike shape and not part of the authorable vocabulary."
+            "Op \(i) is a mergeField embed, a read-path feasibility spike shape, not part of the authorable vocabulary."
         }
     }
 }
@@ -80,7 +79,7 @@ extension Delta {
     /// Returns every violation rather than throwing on the first, because when a fixture
     /// or a client is wrong it is far more useful to see the whole list at once.
     ///
-    /// - Parameter allowingMergeFields: `mergeField` embeds are a P10 feasibility spike,
+    /// - Parameter allowingMergeFields: `mergeField` embeds are a read-path feasibility spike,
     ///   not something a client may author, so they are rejected unless explicitly allowed.
     public func vocabularyViolations(allowingMergeFields: Bool = false) -> [VocabularyViolation] {
         var violations: [VocabularyViolation] = []
@@ -116,11 +115,12 @@ extension Delta {
                     if !followedByNewline {
                         violations.append(.imageNotFollowedByNewline(index: index))
                     } else if let terminatorAttributes = next?.attributes {
-                        // Found while writing the fixture corpus, and not stated in the PRD:
+                        // Found while writing the fixture corpus, and easy to miss:
                         // the newline that terminates an image must be bare. Split drops it
                         // and reassemble emits a plain "\n" in its place, so a header or list
                         // attribute riding on it would vanish on the first native edit — a
-                        // silent content loss of exactly the kind P6 exists to rule out.
+                        // silent content loss of exactly the kind this format's strictness
+                        // exists to rule out.
                         // An image therefore cannot itself be a list item or a heading.
                         for name in terminatorAttributes.keys.sorted()
                         where Vocabulary.blockAttributes.contains(name) {

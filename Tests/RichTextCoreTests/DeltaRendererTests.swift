@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import RichTextCore
 
-/// Build Order step 1. The read path is the hot path — everyone reads, a handful of admins
+/// The read path is the hot path — everyone reads, a handful of admins
 /// edit — so it gets proven first, standalone, with no network and no UI.
 @Suite("DeltaRenderer")
 struct DeltaRendererTests {
@@ -180,8 +180,8 @@ struct DeltaRendererTests {
 
     // MARK: - Whole-document coverage
 
-    /// The P1 comparison document: every element of the vocabulary in one place, so the
-    /// side-by-side check against Quill has a single fixture to point at.
+    /// The full-vocabulary comparison document: every element of the vocabulary in one place, so
+    /// a side-by-side check against Quill has a single fixture to point at.
     @Test("The full-vocabulary fixture renders every element in the table")
     func fullVocabulary() throws {
         let blocks = DeltaRenderer.blocks(from: try FixtureCorpus.named("full-vocabulary").delta)

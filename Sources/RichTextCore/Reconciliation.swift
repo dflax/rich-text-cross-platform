@@ -9,7 +9,8 @@ public enum SyncDecision: Equatable, Sendable {
     /// The remote copy changed and the local one did not. Pull.
     case pull
     /// Base, local and remote all differ. Surfaced to the user, never resolved
-    /// automatically — see `PRD.md`'s Non-Goals.
+    /// automatically — that's a product decision every host makes for itself, not something
+    /// this library should decide silently.
     case conflict(Conflict)
 
     public enum Conflict: Equatable, Sendable {
@@ -26,7 +27,7 @@ public enum SyncDecision: Equatable, Sendable {
     }
 }
 
-/// The three-way comparison the PRD's sync design rests on.
+/// The three-way comparison this package's sync design rests on.
 ///
 /// `lastSyncedDeltaJSON` is the **base**: the exact bytes this client last agreed with the
 /// server on. With it, "these two differ" becomes answerable — *which side moved?* — instead

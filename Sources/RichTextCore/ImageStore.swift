@@ -5,7 +5,7 @@ import Foundation
 ///
 /// Abstracted so `ImageStore` can be built and tested against a local fixture directory with
 /// no network, then pointed at the real bucket without changing the caching logic — which is
-/// the part that actually has to be right for the offline guarantee (P8).
+/// the part that actually has to be right for documents to keep rendering offline.
 public protocol ImageFetching: Sendable {
     func data(for key: String) async throws -> Data
 }
@@ -77,9 +77,9 @@ public enum ImageStoreError: Error, Equatable, CustomStringConvertible {
 /// prevents:
 ///
 /// - Files live in **Application Support, not Caches.** The system may purge Caches at any
-///   time, which would silently break the offline guarantee P8 tests — a document that
-///   rendered yesterday would come back with holes today, with nothing in the app to explain
-///   why.
+///   time, which would silently break the offline guarantee this store exists to provide — a
+///   document that rendered yesterday would come back with holes today, with nothing in the app
+///   to explain why.
 /// - Filenames are the **SHA-256 of the object key**, so a key containing `/` (routine for an
 ///   object-storage key, e.g. `doc-images/…`) cannot be mistaken for a subdirectory path.
 /// - The directory is marked **excluded from backup**, so cached image data does not bloat
@@ -162,7 +162,7 @@ public actor ImageStore {
 
     /// Warms the cache for a set of keys, concurrently.
     ///
-    /// Called in the same pass that pulls a document, per the PRD — a document synced without
+    /// Called in the same pass that pulls a document — a document synced without
     /// its images renders with holes in airplane mode, and the user has no way to fix that
     /// once they are offline. Best-effort by design: one image failing must not stop the rest.
     public func prefetch(keys: [String]) async {

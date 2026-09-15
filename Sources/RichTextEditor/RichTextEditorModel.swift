@@ -103,8 +103,8 @@ public final class RichTextEditorModel {
     /// - Typing (or pasting) immediately before/after an attachment, with no newline between,
     ///   is redirected to insert a separating newline first.
     /// - Backspacing the newline that immediately follows an attachment deletes the whole
-    ///   image instead of merging text onto its line — matching the existing SwiftUI editor's
-    ///   "backspace at offset 0 of a segment whose predecessor is an image" behavior.
+    ///   image instead of merging text onto its line — matching what a user expects
+    ///   "delete this line" to do at an image boundary.
     func shouldChangeText(in range: NSRange, replacementText text: String) -> Bool {
         guard let textView else { return true }
         let storage = textView.textStorage
@@ -144,10 +144,9 @@ public final class RichTextEditorModel {
     private func deleteImage(atAttachmentIndex index: Int) {
         guard let textView else { return }
         let storage = textView.textStorage
-        // Remove the attachment character itself and the newline immediately after it,
-        // matching `SegmentedDocument.deleteImage`'s "join the surrounding text" behavior —
-        // there is no surrounding text to join here since nothing was segmented out, so this
-        // is just deleting the two characters (attachment + its terminator).
+        // Removes the attachment character and the newline immediately after it — the whole
+        // image, matching what a user expects "delete this line" to do at an image boundary
+        // (see docs/ARCHITECTURE.md).
         let deleteLength = min(2, storage.length - index)
         storage.deleteCharacters(in: NSRange(location: index, length: deleteLength))
         textView.selectedRange = NSRange(location: index, length: 0)
@@ -326,7 +325,7 @@ public final class RichTextEditorModel {
 
     // MARK: - Block-level formatting (headers, lists)
 
-    /// The line style of the paragraph the selection currently touches — the mockup's shared,
+    /// The line style of the paragraph the selection currently touches — a single,
     /// mutually-exclusive state, computed from `richTextBlockToken` on the paragraph's
     /// terminating `\n` rather than any class swap.
     public var currentLineStyle: LineStyle {
@@ -373,10 +372,9 @@ public final class RichTextEditorModel {
     }
 
     /// Sets the style of every line the selection touches, clearing whichever of header/list
-    /// each currently has — the mutual exclusivity the mockup's toolbar assumes, matching how
-    /// `EditorModel.toggleList` already treats the two on the AttributedString side. "Currently
-    /// active", for a multi-line selection, is read from the first touched line, same as the
-    /// mockup's own shared state; tapping the already-active style is "back to Body".
+    /// each currently has — header and list are mutually exclusive, matching the toolbar's own
+    /// assumption. "Currently active", for a multi-line selection, is read from the first
+    /// touched line; tapping the already-active style is "back to Body".
     public func setLineStyle(_ style: LineStyle) {
         guard let textView else { return }
         let newlineIndices = touchedNewlineIndices(in: textView)
@@ -420,7 +418,7 @@ public final class RichTextEditorModel {
 
         storage.beginEditing()
         // Block-level: split the current line first if the cursor is not already at a line
-        // start, exactly like the AttributedString editor's `insertImage` does.
+        // start — an image must always begin its own line (see docs/ARCHITECTURE.md).
         if location > 0 {
             let before = (storage.string as NSString).character(at: location - 1)
             if before != 0x0A {

@@ -19,17 +19,17 @@ public typealias PlatformTextStorageEditActions = NSTextStorageEditActions
 // MARK: - Custom attribute keys
 
 extension NSAttributedString.Key {
-    /// The block attributes of the line a newline terminates, carried verbatim — the
-    /// `NSAttributedString` sibling of `BlockAttribute` (`DeltaCodec.swift`). Same contract:
-    /// the encoder reads this back rather than ever inferring `header`/`list` from a rendered
-    /// font size or paragraph style, per the PRD's explicit requirement.
-    public static let richTextBlockToken = NSAttributedString.Key("com.richtextpoc.nsBlockToken")
+    /// The block attributes of the line a newline terminates, carried verbatim as the
+    /// `NSAttributedString` counterpart of `BlockToken` (`Delta.swift`). Same contract: the
+    /// encoder reads this back rather than ever inferring `header`/`list` from a rendered font
+    /// size or paragraph style — see `docs/ARCHITECTURE.md`.
+    public static let richTextBlockToken = NSAttributedString.Key("com.richtextcrossplatform.nsBlockToken")
 
     /// Carries the object key (and alt text) an image attachment was decoded from, tagged on
     /// the same single-character range as the `.attachment` key. `NSTextAttachment` has no
     /// slot for "the key this came from" — this is that slot. `encode` reads it back directly;
     /// it never infers a key from the loaded image.
-    public static let richTextImageInfo = NSAttributedString.Key("com.richtextpoc.nsImageInfo")
+    public static let richTextImageInfo = NSAttributedString.Key("com.richtextcrossplatform.nsImageInfo")
 }
 
 /// The payload of `.richTextImageInfo`.
@@ -49,7 +49,7 @@ public enum NSDeltaCodecError: Error, Equatable, CustomStringConvertible {
     public var description: String {
         switch self {
         case .mergeFieldNotEditable(let i):
-            "Op \(i) is a mergeField embed, a P10 read-path spike shape. It is not authorable and cannot reach this editor."
+            "Op \(i) is a mergeField embed, a read-path feasibility spike shape. It is not authorable and cannot reach this editor."
         }
     }
 }
@@ -80,28 +80,25 @@ public final class FittedImageTextAttachment: NSTextAttachment {
 
 /// Converts a whole Delta (text and image ops together) to and from an `NSAttributedString`.
 ///
-/// Architecturally a sibling of `DeltaCodec`, not a replacement — see
-/// `docs/PRD-uikit-comparison-editor.md` §1/§2. Two differences from that design, both
-/// deliberate:
+/// Two design choices worth being explicit about — see `docs/ARCHITECTURE.md`:
 ///
-/// - **No segmentation.** `DeltaCodec` only ever sees text; `Segmentation.swift` splits images
-///   out first because `TextEditor` cannot display a text attachment at all. `UITextView` can —
-///   Apple DTS's own confirmation of that gap was specific to `TextEditor` — so this codec
-///   embeds images as real `NSTextAttachment`s directly in one continuous string. There is
-///   deliberately no `NSSegmentedDocument`: it would exist solely to give a cursor above/below a
-///   *non-inline* image, and inline attachments don't have that problem.
+/// - **No segmentation.** Images are embedded as real `NSTextAttachment`s directly in one
+///   continuous string, rather than being split out into a separate view interleaved with text
+///   editors: `UITextView` displays a text attachment inline without issue, so there is nothing
+///   to gain from a segmented document structure whose only purpose would be giving a cursor
+///   above/below a *non-inline* image — inline attachments don't have that problem.
 /// - **The block-level image invariants are still real.** An image must be preceded and followed
 ///   by a bare `\n` in the *Delta*, even though it is visually inline in the buffer. `encode`
 ///   restores a missing newline rather than ever producing an invalid Delta; the live editor
-///   (`UIKitEditorModel`) additionally guards the common edit paths so this is rarely reached.
+///   (`RichTextEditorModel`) additionally guards the common edit paths so this is rarely reached.
 public enum NSDeltaCodec {
 
     // MARK: Decode
 
     /// - Parameter image: supplies the already-cached image for a key, synchronously. Decode
     ///   never touches the network or the disk itself — callers (the real editor) pre-warm
-    ///   `ImageStore` first, exactly like `AppServices.warmCache(for:)` already does at sync
-    ///   time; tests pass a stub. A `nil` result still produces a correctly-tagged attachment
+    ///   `ImageStore` first (see `ImageStore.prefetch(keys:)`) rather than block decode on a
+    ///   fetch; tests pass a stub. A `nil` result still produces a correctly-tagged attachment
     ///   with no visible image, so round-trip correctness never depends on image bytes existing.
     public static func decode(_ ops: [Op], image: (String) -> PlatformImage?) throws -> NSMutableAttributedString {
         let result = NSMutableAttributedString()
@@ -165,8 +162,7 @@ public enum NSDeltaCodec {
         guard !isNewlines else {
             let run = NSMutableAttributedString(string: text)
             if let token {
-                // Applied per character, matching `BlockAttribute.runBoundaries` on the
-                // AttributedString side: a valid document never puts a block attribute on a
+                // Applied per character: a valid document never puts a block attribute on a
                 // multi-newline run, but this keeps the invariant true by construction anyway.
                 for offset in 0..<run.length {
                     run.addAttribute(.richTextBlockToken, value: token, range: NSRange(location: offset, length: 1))
@@ -184,9 +180,7 @@ public enum NSDeltaCodec {
     /// straight from Delta text renders in whatever color a bare `NSAttributedString` happens to
     /// default to, and on a dark background that is indistinguishable from invisible: keystrokes
     /// land (the dirty flag and the read view both confirm real content), the buffer is correct,
-    /// but nothing is visible while editing. Found by hands-on device testing — the exact same
-    /// bug class the throwaway spike's own dark-mode fix (`project_context.md`) already named,
-    /// just never carried over into this real codec.
+    /// but nothing is visible while editing. Found by hands-on device testing.
     private static func inlineNSAttributes(from inline: [String: AttributeValue]?) -> [NSAttributedString.Key: Any] {
         let isBold = inline?["bold"] == .bool(true)
         let isItalic = inline?["italic"] == .bool(true)
@@ -209,8 +203,8 @@ public enum NSDeltaCodec {
 
     // MARK: Encode
 
-    /// `encode(decode(d)) == d`, byte-identical — the same obligation `DeltaCodec` carries,
-    /// unreduced by the fact that images now flow through this codec too.
+    /// `encode(decode(d)) == d`, byte-identical, unreduced by the fact that images flow through
+    /// this codec alongside text.
     public static func encode(_ text: NSAttributedString) -> [Op] {
         var ops: [Op] = []
         var buffer = ""
@@ -230,8 +224,8 @@ public enum NSDeltaCodec {
         // `awaitingImageTerminator` is the self-healing half of the block-level image
         // invariant: an ordinary edit in a continuous `UITextView` can trivially put text
         // right after an attachment on the same line (there is no segmentation boundary to
-        // stop it, unlike the AttributedString editor). Rather than let that reach
-        // `vocabularyViolations()` as `imageNotFollowedByNewline`, a missing terminator is
+        // stop it, since images live inline in this same continuous string). Rather than let
+        // that reach `vocabularyViolations()` as `imageNotFollowedByNewline`, a missing terminator is
         // inserted here — content is added, never dropped, so this can never lose text.
         var utf16Offset = 0
         var awaitingImageTerminator = false
@@ -293,9 +287,8 @@ public enum NSDeltaCodec {
 
         // Quill terminates every document with a newline. A live `UITextView` has no such
         // guarantee mid-edit — the ordinary state of "typed a line, haven't pressed Return yet"
-        // legitimately has no trailing "\n" — so this is normalized here exactly the way
-        // `SegmentedDocument.reassemble` already does on the AttributedString side, rather than
-        // ever surfacing as `integrityFailure`. Found by hands-on testing: without this, a
+        // legitimately has no trailing "\n" — so this is normalized here rather than ever
+        // surfacing as `integrityFailure`. Found by hands-on testing: without this, a
         // perfectly ordinary mid-typing document tripped the vocabulary check on every save.
         if ops.last?.textContent.hasSuffix("\n") != true {
             ops.append(.text("\n"))
@@ -304,8 +297,8 @@ public enum NSDeltaCodec {
         // `.coalesced()` merges adjacent ops with identical attributes — including, unhelpfully,
         // two adjacent single-newline ops that both carry the same block token (exactly the
         // "empty list item next to another one" case this method already keeps apart during the
-        // walk above). Un-merge just that case rather than changing `coalesced()`'s general
-        // behavior, which `DeltaCodec`/`Segmentation` also depend on.
+        // walk above). Un-merge just that case rather than changing `coalesced()`'s general,
+        // deliberately-faithful behavior.
         return Self.splittingAmbiguousBlockRuns(Delta(ops: ops).coalesced()).ops
     }
 
@@ -464,7 +457,7 @@ public enum NSDeltaCodec {
         #endif
     }
 
-    // MARK: - Paste hardening & vocabulary clamping (U5)
+    // MARK: - Paste hardening & vocabulary clamping
 
     /// Every `NSAttributedString.Key` this editor ever legitimately writes. Anything else
     /// reaching the buffer — an arbitrary point size, a foreign paragraph style riding along on
@@ -489,8 +482,8 @@ public enum NSDeltaCodec {
     /// italic, underline, strike, and link — before it ever reaches the buffer. Everything else
     /// a real paste from Notes or Safari can carry (point size, font family, foreground/
     /// background color, a foreign paragraph style or list, an embedded image) is discarded
-    /// outright rather than translated: `docs/PRD-uikit-comparison-editor.md` U5's own bar is
-    /// "blocked," not "reinterpreted" — guessing at a translation (a pasted `<h1>` becoming this
+    /// outright rather than translated: the bar here is "blocked," not "reinterpreted" —
+    /// guessing at a translation (a pasted `<h1>` becoming this
     /// editor's Header 1, a pasted bullet becoming this editor's list) risks silently fabricating
     /// structure the user never actually chose from this app's own toolbar.
     public static func sanitizedForPaste(_ source: NSAttributedString) -> NSAttributedString {
@@ -528,7 +521,7 @@ public enum NSDeltaCodec {
         return result
     }
 
-    /// The defensive backstop half of U5: clamps every attribute in `range` down to the
+    /// The defensive backstop half of vocabulary enforcement: clamps every attribute in `range` down to the
     /// vocabulary, for whatever slips past paste interception — a programmatic mutation, a
     /// future code path that doesn't go through `sanitizedForPaste`. Always reruns
     /// `applyVisualBlockStyling` on the whole document afterward — not just when `range` has
@@ -556,9 +549,8 @@ public enum NSDeltaCodec {
     }
 }
 
-/// The `NSTextStorageDelegate` backstop half of U5 (`docs/PRD-uikit-comparison-editor.md`) —
-/// clamps every attribute change to the vocabulary via `NSDeltaCodec.clampToVocabulary`, for
-/// whatever slips past paste interception. `NSTextStorage.delegate` is a weak/unowned reference;
+/// The `NSTextStorageDelegate` backstop that clamps every attribute change to the vocabulary
+/// via `NSDeltaCodec.clampToVocabulary`, for whatever slips past paste interception. `NSTextStorage.delegate` is a weak/unowned reference;
 /// the owner (the live editor) must keep a strong reference to one instance alive for as long as
 /// it's attached to a text view's storage.
 public final class VocabularyTextStorageDelegate: NSObject, NSTextStorageDelegate {

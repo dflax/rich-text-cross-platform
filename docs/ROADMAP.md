@@ -41,6 +41,14 @@ continues. Update this as items move between sections; don't let it silently go 
 - **`docs/backends/mysql.md`, `mongodb.md`, `firebase.md`** — written guidance mapping the
   storage contract (`docs/backends/README.md`) onto each store.
 - **License, minimum OS, and the macOS editor commitment** — see "Decided" below.
+- **Scrubbed internal proof-point references** (`P1`–`P10`, `U1`–`U7`, "Build Order step N", and
+  stale pre-extraction type names like `UIKitEditorModel`/`DeltaCodec`/`SegmentedDocument`) out of
+  every doc comment in `Sources/`, `Tests/`, and `web/packages/rich-text-editor/src/`. These
+  referenced files (`PRD.md`, `docs/PRD-uikit-comparison-editor.md`, `project_context.md`) and
+  types that only exist in the private `rich-text-poc` fork point — dead ends for a public reader
+  or an AI implementing against this package. Also renamed the two custom
+  `NSAttributedString.Key`s off the private repo's name (`com.richtextpoc.*` →
+  `com.richtextcrossplatform.*`) while that's still a free, pre-v0.1.0 change.
 
 ## Packaging — verified 2026-09-14
 
@@ -70,14 +78,15 @@ managers are worth supporting. Tested directly rather than reasoned about:
 
 ## Decided (2026-09-14)
 
-- **License: MIT** — chosen specifically because it permits commercial use without restriction
-  (this app is a real, intended commercial consumer). See `LICENSE`.
+- **License: MIT** — chosen specifically because it permits commercial use without restriction,
+  since a real commercial app is an intended consumer of this package. See `LICENSE`.
 - **Minimum OS stays iOS 26 / macOS 26.** Not being lowered. Matches the fork point's own proven
   baseline; TextKit-2-on-`UITextView` compatibility below iOS 26 was never going to be verified
   work worth prioritizing over the macOS editor below.
-- **A real macOS editor will be built, on `NSTextView`** — not just evaluated. This is now a
-  requirement for the this app integration, not a someday-maybe. See "Scoped, not yet built" below
-  for what that actually takes.
+- **A real macOS editor will be built, on `NSTextView`** — not just evaluated. This is a
+  committed requirement, not a someday-maybe, driven by a real app that needs to replace a
+  markdown+Milkdown architecture that isn't working well (see `README.md`'s intro). See "Scoped,
+  not yet built" below for what that actually takes.
 
 ## Scoped, not yet built
 
@@ -150,23 +159,18 @@ Ordered by what unblocks the most other work.
 6. **Automate keeping the two Swift-side fixture copies in sync** (repo-root `fixtures/`, used by
    the web package's tests, and `Tests/RichTextCoreTests/Resources/fixtures`, required by SPM's
    resource-bundling rules) — a script or a pre-commit check, so they can't silently drift.
-7. **U1/U2/U6/U7-equivalent hands-on verification on real hardware**, ported from the fork
-   point's own outstanding items — hanging indent and non-selectable markers under live editing,
-   cross-editor consistency (well, cross-*platform* now: iOS-authored ↔ web-read), full
-   toolbar/list-editing parity. The fork point never finished this pass before extraction (see
-   that repo's own `TASK-034`); it needs redoing here since this is a different package with a
-   different public API surface, not the same code under a new name. Once the macOS editor
-   exists, its own equivalent pass is separate work, not covered by the iOS pass.
+7. **Hands-on verification on real hardware**, ported from the fork point's own outstanding
+   items — hanging indent and non-selectable markers under live editing, cross-editor consistency
+   (well, cross-*platform* now: iOS-authored ↔ web-read), full toolbar/list-editing parity. The
+   fork point never finished this pass before extraction; it needs redoing here since this is a
+   different package with a different public API surface, not the same code under a new name.
+   Once the macOS editor exists, its own equivalent pass is separate work, not covered by the iOS
+   pass.
 8. **CI** — GitHub Actions running `swift test` (cross-platform, `RichTextCore`),
    `xcodebuild test -scheme RichTextCrossPlatform-Package -destination 'platform=iOS Simulator,…'`
    (the full Swift suite, once the macOS editor lands this may need its own destination too), and
    `npm test`/`npm run typecheck` for the web package, on every PR. Not yet set up.
 9. **CONTRIBUTING.md, issue/PR templates.** Open-source hygiene not yet done.
-10. **Scrub remaining internal proof-point references** (`P1`–`P10`, "Build Order step N") out of
-    code comments across `Sources/RichTextCore/`, `Tests/RichTextCoreTests/`, and
-    `web/packages/rich-text-editor/src/`. Not sensitive (no secrets, checked before the repo went
-    public) — just unpolished, since those numbers meant something in the fork point's own
-    internal PRD and mean nothing to an outside reader here.
 
 ## Open decisions, not yet made
 

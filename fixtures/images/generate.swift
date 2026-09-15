@@ -1,8 +1,8 @@
 import AppKit
 import Foundation
 
-// Deliberately distinguishable at a glance: the P1 side-by-side comparison and the P7
-// cross-platform pass both need to tell one image from another in a screenshot.
+// Deliberately distinguishable at a glance: a side-by-side comparison against Quill, and a
+// cross-platform pass, both need to tell one image from another in a screenshot.
 let specs: [(key: String, label: String, color: NSColor)] = [
     ("doc-images/8f2a0c11.jpg",     "8f2a0c11\nMap of the side gate", .systemBlue),
     ("doc-images/map.jpg",          "map\nMap of the side gate",      .systemGreen),
