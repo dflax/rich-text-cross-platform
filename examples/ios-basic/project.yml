@@ -1,0 +1,41 @@
+name: RichTextEditorDemo
+options:
+  bundleIdPrefix: com.richtextcrossplatform.demo
+  deploymentTarget:
+    iOS: "26.0"
+    macOS: "26.0"
+packages:
+  RichTextCrossPlatform:
+    path: ../..
+targets:
+  RichTextEditorDemo:
+    type: application
+    platform: auto
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: RichTextEditorDemo
+    dependencies:
+      - package: RichTextCrossPlatform
+        product: RichTextCore
+      - package: RichTextCrossPlatform
+        product: RichTextEditor
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.richtextcrossplatform.demo.RichTextEditorDemo
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: true
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations~ipad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        ENABLE_PREVIEWS: true
+        TARGETED_DEVICE_FAMILY: "1,2"
+        # No Apple Developer Team is assumed for this sample app — ad-hoc/no signing so it
+        # builds and runs locally (Simulator, or a local Mac run) without Xcode's signing UI.
+        # A real app removes these and configures its own team/signing.
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGNING_REQUIRED: false
+        CODE_SIGNING_ALLOWED: false
+

@@ -30,6 +30,8 @@ struct ImageUploadEditorView: View {
             imageUploader: DemoImageUploader(cacheDirectory: DemoServices.imageStore.directory)
         )
         .navigationTitle("With Images")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }

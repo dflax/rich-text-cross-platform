@@ -31,3 +31,7 @@ don't talk to a database directly — they work in terms of a `Delta` value, an
 - [`backends/postgres/`](../../backends/postgres/) — a real, working schema + migration.
 - [`mysql.md`](mysql.md), [`mongodb.md`](mongodb.md), [`firebase.md`](firebase.md) — guidance
   mapping the same contract onto each store.
+- [`CATALOG.md`](CATALOG.md) — the fuller provider landscape: every distinct storage technology
+  or provider worth considering (managed Postgres/MySQL flavors, other document stores, CloudKit
+  and other Apple-native options, bundled backend-as-a-service platforms, GraphQL layers, and
+  offline-first sync engines), not just the four above with a written guide today.

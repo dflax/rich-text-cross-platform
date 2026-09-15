@@ -8,24 +8,34 @@ continues. Update this as items move between sections; don't let it silently go 
 
 - **`RichTextCore`** — ported from the fork point unchanged in logic (see `PROVENANCE.md`).
   83 tests green via plain `swift test` from the repo root — cross-platform, no simulator needed.
-- **`RichTextEditor`** — extracted and decoupled from the fork point's backend-specific plumbing.
-  Public API: `RichTextEditor` (SwiftUI view), `RichTextEditorConfiguration`,
-  `RichTextImageUploading`, `ImageDownscaling`. 4 tests green via `xcodebuild test -scheme
-  RichTextCrossPlatform-Package -destination 'platform=iOS Simulator,…'` (real `UITextView`,
-  can't run under plain `swift test` on macOS — see the packaging note below for how this still
-  builds cleanly there).
-- **One `Package.swift` at the repo root, two products** (`RichTextCore`, `RichTextEditor`) —
-  `RichTextEditor`'s source is wrapped in `#if canImport(UIKit)`, so `swift test` succeeds
-  everywhere: on macOS that product simply compiles to an empty module and contributes 0 tests,
-  rather than failing outright on an unconditional `import UIKit`. This replaced an intermediate
-  two-separate-packages structure that fixed the same macOS-build problem but broke a single
-  remote `.package(url:)` dependency being able to add both products — a `.package(url:)` always
-  resolves one manifest at the repository root. Confirmed empirically before committing to it,
-  not assumed. `ImageDownscaling` (referenced from the public, UIKit-gated
-  `RichTextEditorConfiguration`) lives in `ImageDownscaler.swift` deliberately *outside* that
-  guard, since it's a plain cross-platform value type — a lesson worth remembering when the macOS
-  editor product is added: anything a UIKit-gated type's public API exposes has to itself be
-  ungated or gated identically, or the two products won't compose.
+- **`RichTextEditor`, on iOS/iPadOS *and* macOS** — one public API (`RichTextEditor`,
+  `RichTextEditorModel`, `RichTextTextView`, `RichTextEditorConfiguration`,
+  `RichTextImageUploading`, `ImageDownscaling` — the same type names on every platform), backed by
+  `UITextView` on iOS/iPadOS and a real `NSTextView` on macOS, both on TextKit 2. The macOS half
+  was built 2026-09-14, not just scoped — see "The macOS editor, built and verified" below for
+  what shipped and the three real bugs actually launching it caught. 4 iOS tests (real, attached
+  `UITextView`) + 6 macOS tests (real, attached `NSTextView`) green via `xcodebuild test -scheme
+  RichTextCrossPlatform-Package -destination 'platform=iOS Simulator,…'` and
+  `-destination 'platform=macOS'` respectively — neither runs under plain `swift test` on the
+  *other* platform, but the macOS half **does** run under plain `swift test` on this machine
+  (AppKit is native here), unlike the iOS half.
+- **One `Package.swift` at the repo root, two products** (`RichTextCore`, `RichTextEditor`) — no
+  third "Mac" product. `RichTextEditor`'s iOS files stay wrapped in `#if canImport(UIKit)`; its
+  new macOS files (`RichTextEditorModelMac.swift`, `RichTextTextViewMac.swift`) are wrapped in
+  `#if canImport(AppKit)` and declare **the same public type names** (`RichTextEditorModel`,
+  `RichTextTextView`) as their iOS counterparts. Since the two guards are mutually exclusive per
+  build target, this compiles cleanly as one name resolving to a different concrete
+  implementation per platform — the exact pattern `RichTextCore`'s `PlatformFont`/`PlatformImage`/
+  `PlatformColor` already established, scaled up to whole types. This superseded an earlier plan
+  (see prior revisions of this file) to add a third `RichTextEditorMac` product behind a shared
+  `RichTextEditingModel` protocol — unnecessary once the same-name-different-file trick was
+  actually tried, and worse for consumers (one type to import and reference either way, not two).
+  `RichTextFormatBar.swift` lost its `#if canImport(UIKit)` guard entirely once this landed — it
+  only ever imported `SwiftUI`, so one file now serves both platforms unchanged. `ImageDownscaling`
+  living in `ImageDownscaler.swift`, deliberately outside any platform guard, is exactly why this
+  composed cleanly: the trap this note used to warn about (a platform-gated type's public API
+  exposing an ungated dependency) never actually got hit building the macOS half, because that
+  lesson was already applied.
 - **Fixture corpus** — a shared copy at the repo root (`fixtures/`), the same one both
   `RichTextCore`'s own resource-bundled copy (`Tests/RichTextCoreTests/Resources/fixtures`,
   required by SPM's resource-bundling rules) and the web package's tests are proven against. The
@@ -49,6 +59,63 @@ continues. Update this as items move between sections; don't let it silently go 
   or an AI implementing against this package. Also renamed the two custom
   `NSAttributedString.Key`s off the private repo's name (`com.richtextpoc.*` →
   `com.richtextcrossplatform.*`) while that's still a free, pre-v0.1.0 change.
+
+## The macOS editor, built and verified — 2026-09-14
+
+Not just scoped — built, and hands-on verified by actually launching the packaged example app on
+a real Mac (typing, toolbar formatting, a real `NSTextList` bullet with correct hanging indent all
+confirmed visually), not only by `swift build`/`swift test` passing. Three real bugs were found
+this way that no amount of code review or compiling would have caught — see
+`docs/ARCHITECTURE.md`'s new macOS section for the technical detail on each:
+
+1. Plain `NSTextView()` defaults to legacy TextKit 1, unlike `UITextView()` — the explicit opt-in
+   is `NSTextView(usingTextLayoutManager: true)`.
+2. Reading the legacy `.layoutManager` property even once — including read-only, including from
+   inside `intrinsicContentSize` written by direct analogy to the iOS version — silently and
+   permanently downgrades that view to TextKit 1 compatibility mode. The TextKit-2-native
+   replacement is `NSTextLayoutManager.usageBoundsForTextContainer`.
+3. `NSViewRepresentable.updateNSView` is not guaranteed to re-run once a view actually gets a
+   window if the `focused` binding's value doesn't change in between — a text view that should
+   start focused could sit permanently unfocused. Fixed by grabbing first responder inside
+   `NSView.viewDidMoveToWindow` instead of relying on `updateNSView` alone.
+
+The two decisions this file previously flagged as needing to be made before writing the mac model
+were both resolved as recommended: selection collapses to `selectedRanges.first` (documented in
+the mac model's own doc comment, not left to read as an oversight), and `RichTextFormatBar` is
+now genuinely shared — its `#if canImport(UIKit)` guard is gone, not just theoretically removable.
+`NSTextViewDelegate`'s method shapes were indeed different from `UITextViewDelegate`'s, confirmed
+by the compiler while writing `RichTextTextViewMac.swift`: `textDidChange`/`textViewDidChangeSelection`
+take a `Notification` (read `.object as? NSTextView` if needed), not the text view directly, and
+`shouldChangeTextIn` takes `replacementString: String?` (nilable, unlike UIKit's non-optional
+`String`).
+
+**Not yet done, tracked below rather than silently assumed:** a pass on real Mac hardware (this
+was verified via a locally-launched, unsigned build automated through the Accessibility API, not
+a human clicking around); the Liquid Glass toolbar's actual visual polish on macOS (functional
+correctness was verified — the toolbar responds and reflects active state correctly — but its
+*appearance* next to Notes-style iOS chrome hasn't been eyeballed side by side); paste-from-another-
+Mac-app hardening (`RichTextEditorNSTextView.paste(_:)` exists and is a straight port of the iOS
+sanitization logic, but wasn't exercised end-to-end with a real rich paste from Notes/Safari the
+way the iOS path was during its own original hands-on pass).
+
+## The example app's Xcode project — built and verified 2026-09-14
+
+`examples/ios-basic` now has a real, generated `RichTextEditorDemo.xcodeproj` — not just source
+files waiting on manual project creation. Built with [XcodeGen](https://github.com/yonaskolb/XcodeGen)
+from a checked-in `project.yml` (`brew install xcodegen`; regenerate with `xcodegen generate` from
+`examples/ios-basic/` after editing `project.yml` or adding/removing source files) rather than a
+hand-maintained `.xcodeproj`, so the project definition stays readable and diffable in version
+control instead of being an opaque, merge-conflict-prone binary-ish plist.
+
+The target is genuinely multiplatform — `platform: auto` + `supportedDestinations: [iOS, macOS]`,
+matching the exact `SDKROOT = auto` / `SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx"`
+shape Apple's own "Multiplatform App" Xcode template produces — not a Mac Catalyst build and not
+two separate targets. One scheme, `RichTextEditorDemo`, builds and actually ran on both
+`-destination 'platform=macOS'` and a booted iOS Simulator; the `.xcodeproj` is checked in (built
+artifacts under it are not — see `.gitignore`) so a consumer doesn't need XcodeGen installed just
+to open and run the example, only to regenerate it after a source change. Code signing is
+deliberately disabled (`CODE_SIGNING_ALLOWED: false`) since this is a sample app with no assumed
+Apple Developer Team — a real app removes that and configures its own.
 
 ## Packaging — verified 2026-09-14
 
@@ -83,104 +150,67 @@ managers are worth supporting. Tested directly rather than reasoned about:
 - **Minimum OS stays iOS 26 / macOS 26.** Not being lowered. Matches the fork point's own proven
   baseline; TextKit-2-on-`UITextView` compatibility below iOS 26 was never going to be verified
   work worth prioritizing over the macOS editor below.
-- **A real macOS editor will be built, on `NSTextView`** — not just evaluated. This is a
-  committed requirement, not a someday-maybe, driven by a real app that needs to replace a
-  markdown+Milkdown architecture that isn't working well (see `README.md`'s intro). See "Scoped,
-  not yet built" below for what that actually takes.
+- **A real macOS editor, on `NSTextView`** — not just evaluated, and no longer just committed:
+  built and verified 2026-09-14, driven by a real app that needs to replace a markdown+Milkdown
+  architecture that isn't working well (see `README.md`'s intro). See "The macOS editor, built and
+  verified" above.
 
 ## Scoped, not yet built
 
 Ordered by what unblocks the most other work.
 
-1. **The macOS editor** (`NSTextView`-based), now committed rather than speculative. Verified
-   2026-09-14 by actually running the suite and reading the call sites, not by inference:
-   - **`RichTextCore` is already proven on AppKit — not "likely reusable," actually verified.**
-     Plain `swift test` on macOS has no `UIKit` at all, so every one of its 83 green tests —
-     including `"A decoded image attachment fits the text container's width instead of rendering
-     at its raw pixel size"`, the full `NSTextList` instance-identity/renumbering suite, and
-     `VocabularyTextStorageDelegate`'s clamp/re-entrancy tests — already compiled and ran through
-     the `#elseif canImport(AppKit)` branches (`FittedImageTextAttachment.attachmentBounds`,
-     `PlatformTextStorageEditActions`, `NSParagraphStyle`/`NSTextList` construction). Nothing left
-     to confirm here; the codec layer is not a risk for this work.
-   - **The real, non-cosmetic porting cost is `selectedRange`.** `RichTextEditorModel` reads or
-     writes `textView.selectedRange` — a single `NSRange` — at 20 call sites (`currentLineStyle`,
-     `isBoldActive`/`isItalicActive`/`isUnderlineActive`/`isStrikeActive`, `linkEditContext`,
-     `applyLink`, `setLineStyle`, `insertImage`, the coordinator's selection callback, etc.).
-     `NSTextView` has no equivalent single-range property — `selectedRanges: [NSValue]` exists
-     because AppKit supports discontiguous multi-range selection. **Decision needed before writing
-     the mac model**: collapse to `selectedRanges.first` at the one point where the mac coordinator
-     reads selection (matching this editor's existing single-range UX and vocabulary — nothing here
-     is designed around multi-range selection anyway), rather than threading `[NSValue]` through
-     all 20 call sites. Recommendation: collapse. Record the choice in the mac model's doc comment
-     so it reads as a decision, not an oversight, if someone later wonders why multi-select does
-     nothing useful.
-   - **Delegate surface is a rewrite, not a rename** — confirmed by grep, not memory:
-     `RichTextTextView`'s `Coordinator: UITextViewDelegate` implements `textViewDidChange(_:)` and
-     `textViewDidChangeSelection(_:)`. `NSTextViewDelegate` has different method shapes for the
-     first (AppKit's text-change notification comes through `NSTextDelegate`, not the same
-     signature) — verify the exact current signature against the macOS 26 SDK when writing this,
-     don't assume from an iOS mental model.
-   - **`isScrollEnabled = false` + `intrinsicContentSize` auto-sizing has no AppKit equivalent.**
-     `NSTextView` doesn't expose `isScrollEnabled`; it's normally hosted inside an `NSScrollView`.
-     The auto-growing-height trick `RichTextTextView` uses for the iOS editor needs a genuinely
-     different mechanism on macOS (e.g. observing the text container's used rect and resizing the
-     hosting view), not a ported property.
-   - **`RichTextFormatBar` is confirmed toolbar-shareable in principle** (it only imports
-     `SwiftUI`, no `UIKit` types — checked directly), but it's currently wrapped inside
-     `RichTextEditor`'s own `#if canImport(UIKit)` file guard alongside everything else, and its
-     button actions call directly into `RichTextEditorModel` (the iOS-specific class). To actually
-     share the file rather than just observe that it *could* be shared, extract a small protocol
-     (e.g. `RichTextEditingModel`) that both `RichTextEditorModel` and the new mac model conform
-     to, and have the format bar depend on the protocol — otherwise "shareable" stays theoretical.
-   - Liquid Glass's `GlassEffectContainer`/`.glassEffect()` is available on macOS 26 too, so the
-     toolbar's look carries over once the protocol above makes the file genuinely shared.
-   - New product/target (e.g. `RichTextEditorMac`) — third product from the one `Package.swift`.
-     Watch for the same "anything a platform-gated type's public API exposes must itself be
-     ungated or gated identically" trap `ImageDownscaling` already hit once (see "Done and
-     verified" above).
-   - Needs its own README.md Scope-section update and `docs/ARCHITECTURE.md` update once real —
-     don't leave the "iOS/iPadOS only" framing stale once this lands.
-2. **Finish wrapping `examples/ios-basic`'s source in a real `.xcodeproj`.** The four Swift files
-   (minimal / with-images / custom-toolbar / app entry) are written and manually verified against
-   the real `RichTextEditor` API; the project-scaffolding tool needed a one-time manual approval
-   click that wasn't available when this was written. See `examples/ios-basic/README.md` for the
-   two-minute manual step, or have a session with Xcode MCP access retry `XcodeNewProject`.
-3. **A web sample app** mirroring the iOS one's configuration variants
+1. **A web sample app** mirroring the iOS one's configuration variants
    (`configureImageBaseURL`, a demo `QuillHost` usage, a custom-toolbar-equivalent — Quill's own
    toolbar module config already *is* the "custom toolbar" story, so this is more "show it" than
    "build new capability").
-4. **A build step for the web package** producing a publishable `dist/` (tsup or plain `tsc`) —
+2. **A build step for the web package** producing a publishable `dist/` (tsup or plain `tsc`) —
    it currently ships as source, `main`/`types` pointing straight at `src/index.ts`.
-5. **Port the fork point's fuller round-trip test suite** to the web package —
+3. **Port the fork point's fuller round-trip test suite** to the web package —
    `test/round-trip.test.ts` proves byte-identity and vocabulary membership across the whole
    corpus (22 tests), which is the actual cross-platform-consistency proof, but doesn't yet cover
    every coalescing/idempotence/image-edge-case assertion `RichTextCoreTests` covers on the Swift
    side. See that package's own `README.md`.
-6. **Automate keeping the two Swift-side fixture copies in sync** (repo-root `fixtures/`, used by
+4. **Automate keeping the two Swift-side fixture copies in sync** (repo-root `fixtures/`, used by
    the web package's tests, and `Tests/RichTextCoreTests/Resources/fixtures`, required by SPM's
    resource-bundling rules) — a script or a pre-commit check, so they can't silently drift.
-7. **Hands-on verification on real hardware**, ported from the fork point's own outstanding
-   items — hanging indent and non-selectable markers under live editing, cross-editor consistency
-   (well, cross-*platform* now: iOS-authored ↔ web-read), full toolbar/list-editing parity. The
-   fork point never finished this pass before extraction; it needs redoing here since this is a
-   different package with a different public API surface, not the same code under a new name.
-   Once the macOS editor exists, its own equivalent pass is separate work, not covered by the iOS
-   pass.
-8. **CI** — GitHub Actions running `swift test` (cross-platform, `RichTextCore`),
-   `xcodebuild test -scheme RichTextCrossPlatform-Package -destination 'platform=iOS Simulator,…'`
-   (the full Swift suite, once the macOS editor lands this may need its own destination too), and
-   `npm test`/`npm run typecheck` for the web package, on every PR. Not yet set up.
-9. **CONTRIBUTING.md, issue/PR templates.** Open-source hygiene not yet done.
+5. **Hands-on verification on real hardware**, ported from the fork point's own outstanding
+   items — hanging indent and non-selectable markers under live editing on a real iPhone/iPad/Mac
+   (not just Simulator and an unsigned local Mac build driven by the Accessibility API — see "The
+   macOS editor" above for exactly what that pass did and didn't cover), cross-editor consistency
+   (well, cross-*platform* now: iOS-authored ↔ macOS-read ↔ web-read), full toolbar/list-editing
+   parity. The fork point never finished this pass before extraction; it needs redoing here since
+   this is a different package with a different public API surface, not the same code under a new
+   name.
+6. **CI** — GitHub Actions running `swift test` (cross-platform, `RichTextCore` + the macOS half of
+   `RichTextEditor`), `xcodebuild test -scheme RichTextCrossPlatform-Package -destination
+   'platform=iOS Simulator,…'` (the iOS half of `RichTextEditor`), and `npm test`/
+   `npm run typecheck` for the web package, on every PR. Not yet set up. `examples/ios-basic`'s own
+   build (`xcodegen generate` then `xcodebuild build` for both `platform=macOS` and an iOS
+   Simulator destination) is worth a CI job too, now that it's a real, generated Xcode project
+   rather than loose source files.
+7. **CONTRIBUTING.md, issue/PR templates.** Open-source hygiene not yet done.
+8. **visionOS support** — see `docs/visionos.md` for the concrete assessment and what it would
+   take.
+9. **Backend connectivity beyond Postgres/MySQL/MongoDB/Firebase guidance** — see
+   `docs/backends/CATALOG.md` for the fuller provider landscape and what's guidance versus
+   shipped code for each.
 
 ## Open decisions, not yet made
 
 - **How to distribute this once it's more than one product's worth of platforms** — today's
-  single `Package.swift`/multiple-products shape works cleanly for `RichTextCore` +
-  `RichTextEditor` (+ the macOS product once built); if this ever needs to split (e.g. a
+  single `Package.swift`/two-products shape (see "One `Package.swift` at the repo root" above)
+  held up fine even through adding the macOS editor; if this ever needs to split (e.g. a
   genuinely separate release cadence per platform), that's a real decision to make deliberately,
   not a default to fall into.
 - **Whether the fork point's SwiftUI/`TextEditor`-based editor is worth ever revisiting** —
-  deliberately not ported (see `PROVENANCE.md`). If a future SDK closes the hanging-indent/
-  non-selectable-marker gap `docs/ARCHITECTURE.md` describes, that changes the calculus; until
-  then, carrying a third *iOS* editor implementation here (distinct from the macOS editor above,
-  which targets a platform with no editor at all yet) would add API surface for no proven benefit.
+  deliberately not ported (see `PROVENANCE.md`), and the calculus hasn't changed now that a real
+  `NSTextView` editor exists for macOS too: it would be a second, structurally worse iOS editor
+  (no real inline images, no real list markers, and the fork point's own code carries visible
+  scars from an unresolved multi-round selection-tracking investigation — see
+  `rich-text-poc/apple/RichTextPOC/RichTextPOC/DocumentEditorView.swift`'s `SegmentTextEditor` if
+  this is ever reconsidered) for no proven benefit over what's already shipped.
+- **Whether to keep XcodeGen as the example app's project-generation tool, or move to a
+  hand-maintained `.xcodeproj`** once the example app's structure stabilizes — XcodeGen keeps
+  `project.yml` diffable and avoids merge conflicts in a binary-ish `.xcodeproj`, at the cost of a
+  build-time dependency (`brew install xcodegen`) for anyone who needs to *regenerate* it (opening
+  and running the checked-in `.xcodeproj` needs nothing extra).

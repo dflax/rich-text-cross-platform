@@ -1,0 +1,87 @@
+name: CI
+
+# Runs the whole verification story documented in README.md's "Building and testing this repo":
+# plain `swift test` (RichTextCore, cross-platform, plus RichTextEditor's macOS half — both real
+# AppKit here, no simulator needed), an iOS Simulator destination for RichTextEditor's iOS half,
+# the example app's own multiplatform build, and the web package's own test/typecheck.
+#
+# Requires a macOS runner with an Xcode version whose SDKs include iOS 26 / macOS 26 (this
+# package's deployment floor — see docs/ROADMAP.md's Decided section for why that isn't being
+# lowered). Pin `xcode-version` below once a specific GitHub-hosted runner image is confirmed to
+# carry that SDK; `latest-stable` is a placeholder, not a verified pin.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  swift-test:
+    name: swift test (RichTextCore + macOS RichTextEditor)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - run: swift test
+
+  ios-simulator:
+    name: xcodebuild test (iOS half of RichTextEditor)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Select a booted-capable iOS Simulator destination
+        run: |
+          DEVICE=$(xcrun simctl list devices available iOS | grep -m1 "iPhone" | sed -E 's/^[[:space:]]*([^(]+) \(([-A-F0-9]+)\).*/\2/')
+          echo "SIMULATOR_ID=$DEVICE" >> "$GITHUB_ENV"
+      - run: |
+          xcodebuild test -scheme RichTextCrossPlatform-Package \
+            -destination "id=$SIMULATOR_ID"
+
+  example-app:
+    name: Example app builds (macOS + iOS Simulator)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Regenerate the example app's Xcode project
+        working-directory: examples/ios-basic
+        run: xcodegen generate
+      - name: Build for macOS
+        working-directory: examples/ios-basic
+        run: |
+          xcodebuild build -project RichTextEditorDemo.xcodeproj \
+            -scheme RichTextEditorDemo -destination 'platform=macOS'
+      - name: Select a booted-capable iOS Simulator destination
+        run: |
+          DEVICE=$(xcrun simctl list devices available iOS | grep -m1 "iPhone" | sed -E 's/^[[:space:]]*([^(]+) \(([-A-F0-9]+)\).*/\2/')
+          echo "SIMULATOR_ID=$DEVICE" >> "$GITHUB_ENV"
+      - name: Build for iOS Simulator
+        working-directory: examples/ios-basic
+        run: |
+          xcodebuild build -project RichTextEditorDemo.xcodeproj \
+            -scheme RichTextEditorDemo -destination "id=$SIMULATOR_ID"
+
+  web:
+    name: Web package (npm test + typecheck)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web/packages/rich-text-editor
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install
+      - run: npm test -- --run
+      - run: npx tsc --noEmit

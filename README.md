@@ -13,24 +13,26 @@ handling. Quill Delta is a small, well-specified JSON format with the structure 
 needs and none of Markdown's ambiguity; this project's job is a matching pair of first-class
 native editors around it, plus enough backend-agnostic contract that it isn't tied to one stack.
 
-**Status: early.** The Swift package and the web package are both real and tested — 87 Swift
-tests, 22 web tests, the web tests proven against the *same* fixture corpus the Swift side uses,
-which is the actual cross-platform-consistency proof, not just a claim. Not yet done: a native
-macOS editor (in progress — see `docs/ROADMAP.md`), sample apps aren't fully wired into runnable
-projects yet, the web package has no build step for publishing, and backend adapters beyond a
-real Postgres schema are guidance, not shipped code. Don't point production traffic at this yet —
-see [`PROVENANCE.md`](PROVENANCE.md) for exactly what's proven versus newly extracted, and
+**Status: early, but editing is now real on all three Apple platforms.** The Swift package and
+the web package are both real and tested — 83 cross-platform `RichTextCore` tests, 4 iOS-only and
+6 macOS-only `RichTextEditor` tests (against real, attached `UITextView`/`NSTextView` instances),
+22 web tests proven against the *same* fixture corpus the Swift side uses. The example app builds
+and has been hands-on verified on macOS (real typing, real toolbar formatting, a real `NSTextList`
+bullet marker with correct hanging indent) and on iOS Simulator. Not yet done: the web package has
+no build step for publishing, backend adapters beyond a real Postgres schema are guidance rather
+than shipped code, and CI isn't wired up yet. Don't point production traffic at this yet — see
+[`PROVENANCE.md`](PROVENANCE.md) for exactly what's proven versus newly extracted, and
 [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full punch list.
 
 ## Scope, read carefully
 
 - **Reading** a document (rendering a `Delta` read-only) is cross-platform today: iOS, iPadOS,
   and macOS via SwiftUI, plus the web.
-- **Editing** a document natively is **iOS/iPadOS only** right now. The editor is built on
-  `UITextView`/TextKit 2 for real hanging indent and non-selectable list markers — the two things
-  a naive `AttributedString`-based approach cannot do (see `docs/ARCHITECTURE.md`). A native
-  macOS editor on `NSTextView` is committed, in-progress work, not a maybe — see
-  `docs/ROADMAP.md` for status.
+- **Editing** a document natively works on **iOS, iPadOS, and macOS.** One public API
+  (`RichTextEditor`, `RichTextEditorModel`, `RichTextTextView` — the same type names on every
+  platform) backed by `UITextView` on iOS/iPadOS and `NSTextView` on macOS, both on TextKit 2, for
+  real hanging indent and non-selectable list markers — the two things a naive
+  `AttributedString`-based approach cannot do (see `docs/ARCHITECTURE.md`).
   - Editing on the **web** is not iOS-gated at all — Quill runs anywhere a browser does. The web
     package (`web/packages/rich-text-editor`) is real and tested; see `docs/ROADMAP.md` for what's
     left (a build step, a sample app, wider test coverage).
@@ -44,15 +46,18 @@ see [`PROVENANCE.md`](PROVENANCE.md) for exactly what's proven versus newly extr
 
 ```
 Package.swift  One Swift package, two products: RichTextCore (Delta model, codec, vocabulary,
-               image cache, sync reconciliation) and RichTextEditor (the UITextView-backed
-               editor + its SwiftUI wrapper)
+               image cache, sync reconciliation) and RichTextEditor (the editor + its SwiftUI
+               wrapper — UITextView-backed on iOS/iPadOS, NSTextView-backed on macOS, same
+               public type names on both platforms via mutually-exclusive `#if canImport` files)
 Sources/       RichTextCore/, RichTextEditor/ — see above
-Tests/         RichTextCoreTests/, RichTextEditorTests/
+Tests/         RichTextCoreTests/, RichTextEditorTests/ (iOS- and macOS-specific suites, each
+               gated to the platform they exercise)
 web/           packages/rich-text-editor — the Quill-based editor package (real, tested)
 fixtures/      The shared Delta corpus both platforms' tests are proven against
 backends/      A real Postgres schema/migration; adapter guidance for other stores lives in docs/backends/
 docs/          Architecture, integration guides, backend contract + per-store guidance, roadmap
-examples/      Sample apps per platform, showing different configuration options (see docs/ROADMAP.md)
+examples/      A multiplatform (iOS/iPadOS/macOS) sample app, showing different configuration
+               options — see examples/ios-basic/README.md
 ```
 
 ## Quick start — Swift
@@ -105,21 +110,25 @@ See [`web/packages/rich-text-editor/README.md`](web/packages/rich-text-editor/RE
 
 ## Building and testing this repo
 
-`RichTextCore` is plain cross-platform Swift — the whole suite runs with no simulator:
+`RichTextCore` is plain cross-platform Swift, and `RichTextEditor`'s macOS half (a real
+`NSTextView`) is native AppKit — both run with no simulator:
 
 ```
 swift test
 ```
 
-`RichTextEditor` uses a real `UITextView` and can't be exercised by plain `swift test` on macOS
-(its source is gated behind `#if canImport(UIKit)`, so `swift test` still succeeds — it just
-compiles that product to an empty module and runs 0 of its tests). To run everything, including
-`RichTextEditor`'s own tests, use an iOS Simulator destination:
+`RichTextEditor`'s iOS half uses a real `UITextView`, which plain `swift test` on macOS can't
+exercise (that file is gated behind `#if canImport(UIKit)`, so it compiles to an empty module and
+contributes 0 tests there). To run the iOS-specific suite too, use an iOS Simulator destination:
 
 ```
 xcodebuild test -scheme RichTextCrossPlatform-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 ```
+
+The same scheme also runs on a real macOS destination (`-destination 'platform=macOS'`), which is
+how the macOS-only `RichTextEditorModel` suite gets exercised through Xcode instead of plain
+`swift test`, identically to the iOS Simulator case above.
 
 The web package is a plain Node/Vitest project:
 

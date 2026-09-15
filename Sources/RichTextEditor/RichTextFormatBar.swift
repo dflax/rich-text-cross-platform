@@ -1,14 +1,16 @@
-#if canImport(UIKit)
 import SwiftUI
 
-/// The default toolbar: lists/link/photo live on a floating glass bar docked above the
-/// keyboard; paragraph style and character formatting live behind `Aa`. Sized to sit close to
-/// Apple Notes' own bar (48pt bar height, 44pt buttons, 22pt glyphs) rather than guessed.
+/// The default toolbar: lists/link/photo live on a floating glass bar (docked above the keyboard
+/// on iOS/iPadOS, above the text on macOS); paragraph style and character formatting live behind
+/// `Aa`. Sized to sit close to Apple Notes' own bar (48pt bar height, 44pt buttons, 22pt glyphs)
+/// rather than guessed. Pure SwiftUI — no `UIKit`/`AppKit` import — so one implementation serves
+/// both platforms, driven by the platform-specific `RichTextEditorModel`.
 ///
 /// Uses the real Liquid Glass API (`glassEffect`/`GlassEffectContainer`), not an approximation —
-/// this package's deployment target is iOS 26, the same OS release that introduced it. Supply
-/// your own view instead of this one via `RichTextEditorConfiguration.toolbar` if you'd rather
-/// not take the Liquid Glass look, or need to support an earlier OS for the rest of your app.
+/// this package's deployment target is iOS 26 / macOS 26, the same OS release that introduced
+/// it. Supply your own view instead of this one via `RichTextEditorConfiguration.toolbar` if
+/// you'd rather not take the Liquid Glass look, or need to support an earlier OS for the rest of
+/// your app.
 struct RichTextFormatBar: View {
     let model: RichTextEditorModel
     @Binding var isPanelOpen: Bool
@@ -145,4 +147,3 @@ struct RichTextFormatBar: View {
         .buttonStyle(.plain)
     }
 }
-#endif

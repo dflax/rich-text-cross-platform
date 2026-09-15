@@ -4,10 +4,11 @@ import SwiftUI
 
 /// Replaces the default Liquid Glass toolbar entirely via `RichTextEditorConfiguration.toolbar`
 /// — useful for matching an existing design system, or for supporting an OS version below this
-/// package's iOS 26 minimum for the rest of your app (the editor itself still needs iOS 26 for
-/// its TextKit 2 behavior; only the *toolbar chrome* is swappable here). The closure receives the
-/// live `RichTextEditorModel` — the same object the default toolbar drives — so a custom toolbar
-/// has access to exactly the same actions (`setLineStyle`, `toggleBold`, `currentLineStyle`, …).
+/// package's iOS 26 / macOS 26 minimum for the rest of your app (the editor itself still needs
+/// that minimum for its TextKit 2 behavior; only the *toolbar chrome* is swappable here). The
+/// closure receives the live `RichTextEditorModel` — the same object the default toolbar drives
+/// — so a custom toolbar has access to exactly the same actions (`setLineStyle`, `toggleBold`,
+/// `currentLineStyle`, …).
 struct CustomToolbarEditorView: View {
     @State private var delta = Delta(ops: [.text("This editor has a plain, minimal toolbar instead of the default one.\n")])
 
@@ -21,7 +22,9 @@ struct CustomToolbarEditorView: View {
             )
         )
         .navigationTitle("Custom Toolbar")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }
 

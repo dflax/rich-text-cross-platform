@@ -1,8 +1,19 @@
 # Swift
 .build/
 .swiftpm/
-*.xcodeproj
+# `!*.xcodeproj/project.pbxproj` alone does NOT work: a plain `*.xcodeproj` pattern makes git
+# ignore the whole directory and never descend into it at all, so a negation for a path inside it
+# has no effect — confirmed with `git check-ignore -v`, not assumed. Ignoring the *contents*
+# instead (`*.xcodeproj/*`) keeps git descending into the bundle, so the negations below actually
+# track the two files a checkout needs (the project definition and the workspace it wraps) while
+# everything else in the bundle (user-specific state) stays ignored, both directly here and via
+# the standalone `xcuserdata/` rule below, which still matches at any depth.
+*.xcodeproj/*
 !*.xcodeproj/project.pbxproj
+!*.xcodeproj/project.xcworkspace
+!*.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+!*.xcodeproj/xcshareddata
+!*.xcodeproj/xcshareddata/**
 DerivedData/
 .DS_Store
 
@@ -53,3 +64,4 @@ dist/
 # deliberate decision to make that content public.
 CLAUDE.md
 NOTES.md
+BACKLOG.md

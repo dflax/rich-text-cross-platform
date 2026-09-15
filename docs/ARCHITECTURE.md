@@ -72,9 +72,52 @@ never present in the editable string. The cost is real too, named rather than gl
   `allowsEditingTextAttributes = false` closes off the system's own format UI, and paste
   interception + an `NSTextStorageDelegate` backstop close off the realistic remaining vector —
   see `docs/guides/vocabulary-enforcement.md`.
-- **No macOS story yet — but committed, in-progress work, not a maybe.** `NSTextView` is
-  AppKit's related but distinct API surface; a real editor on it is scoped in `docs/ROADMAP.md`
-  and not yet built. See `README.md`'s Scope section for current status.
+## macOS: a genuinely separate implementation behind the same public API
+
+`NSTextView` is AppKit's related but distinct API surface, not a drop-in `UITextView` — the real
+editor on it (`RichTextEditorModel`, `RichTextTextView`, both in `...Mac.swift` files gated
+`#if canImport(AppKit)`) shares its *public type names* with the iOS implementation but not a
+line of its actual code, matching the pattern `RichTextCore` already established with
+`PlatformFont`/`PlatformImage`/`PlatformColor`. A consumer writes `RichTextEditor(delta:
+imageStore:)` once; which concrete class backs `RichTextEditorModel` is decided per-platform at
+compile time, invisibly. Two design differences from the iOS model, both deliberate:
+
+- **Selection collapses to `selectedRanges.first`.** `NSTextView` has no single-range property
+  the way `UITextView` does — `selectedRanges: [NSValue]` exists because AppKit supports
+  discontiguous multi-range selection, which this editor's vocabulary and toolbar don't use on
+  either platform. Collapsing here matches the iOS UX exactly rather than threading multi-range
+  selection through code that was never designed around it.
+- **No `NSScrollView`.** `NSTextView` has no `isScrollEnabled` — the auto-growing-height trick
+  `RichTextTextView` uses on iOS has an AppKit equivalent, not an identical API: the text
+  container tracks the view's own width with unbounded height, and `intrinsicContentSize` is
+  derived from `NSTextLayoutManager.usageBoundsForTextContainer`.
+
+Three real, non-obvious bugs surfaced only by actually launching the editor — `swift build`
+compiling cleanly proved nothing about any of them, which is itself worth remembering next time
+AppKit text is on the critical path:
+
+- **TextKit 2 is not the AppKit default.** `UITextView()` defaults to TextKit 2; the AppKit
+  equivalent, plain `NSTextView()`, silently defaults to legacy TextKit 1. The explicit opt-in is
+  a different initializer, `NSTextView(usingTextLayoutManager: true)`.
+- **Reading the legacy `.layoutManager` property — even just once, even read-only — permanently
+  downgrades that view to TextKit 1 compatibility mode, silently, no error.** This is a stricter
+  trap than UIKit's "don't touch it" rule implies: an `intrinsicContentSize` override written by
+  direct analogy to the iOS one (`layoutManager.usedRect(for:)`) reintroduces exactly the failure
+  the `usingTextLayoutManager: true` opt-in was supposed to prevent. The TextKit-2-native
+  replacement is `NSTextLayoutManager.usageBoundsForTextContainer`, never `.layoutManager`.
+- **`NSViewRepresentable.updateNSView` is not a reliable enough signal for "the view now has a
+  window."** Unlike `UIViewRepresentable` on iOS (where the analogous timing issue is solved by
+  deferring the TextKit-2 assertion into `didMoveToWindow`), an `NSTextView` that should start
+  focused could stay unfocused indefinitely here, because nothing guarantees SwiftUI calls
+  `updateNSView` again once attachment actually completes if the `focused` binding's *value*
+  never changes in between. Establishing first responder status inside `NSView.viewDidMoveToWindow`
+  — not `updateNSView` — is the fix, mirroring where `RichTextEditorUITextView` already checks
+  its own window-dependent state for an unrelated reason (dynamic color resolution).
+
+All three were caught by actually launching the packaged example app on a real Mac and typing
+into it — not by `swift build`, `swift test`, or code review — which is the concrete case for why
+`examples/ios-basic`'s Xcode project builds for macOS as a first-class destination rather than
+existing only for iOS.
 
 ## One document, one mutable copy
 

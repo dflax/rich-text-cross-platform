@@ -18,6 +18,8 @@ struct MinimalEditorView: View {
             configuration: RichTextEditorConfiguration(allowsImages: false)
         )
         .navigationTitle("Minimal")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }

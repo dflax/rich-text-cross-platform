@@ -1,4 +1,3 @@
-#if canImport(UIKit)
 import PhotosUI
 import RichTextCore
 import SwiftUI
@@ -28,9 +27,9 @@ public struct RichTextEditorConfiguration: Sendable {
     /// `ImageDownscaling`.
     public var imageDownscaling: ImageDownscaling = .default
     /// Supply your own view instead of the default Liquid Glass toolbar — e.g. to match an
-    /// existing design system, or to support an OS version below this package's iOS 26 minimum
-    /// for the rest of your app while still editing rich text on newer devices. Receives the
-    /// same `RichTextEditorModel` the default toolbar drives; see `docs/guides/custom-toolbar.md`.
+    /// existing design system, or to support an OS version below this package's iOS 26 / macOS 26
+    /// minimum for the rest of your app while still editing rich text on newer devices. Receives
+    /// the same `RichTextEditorModel` the default toolbar drives; see `docs/guides/custom-toolbar.md`.
     public var toolbar: (@MainActor (RichTextEditorModel) -> AnyView)?
 
     public init(
@@ -48,18 +47,17 @@ public struct RichTextEditorConfiguration: Sendable {
     public static let `default` = RichTextEditorConfiguration()
 }
 
-// ImageDownscaling itself lives in ImageDownscaler.swift, outside this file's
-// #if canImport(UIKit) guard — it's a plain, genuinely cross-platform configuration struct
-// (ImageDownscaler.swift already compiles on both UIKit and AppKit), and RichTextEditorConfiguration
-// referencing it here must not force it to only exist on UIKit platforms.
-
-/// A rich-text editor backed by a real `UITextView` — real hanging indent and non-selectable
-/// list markers via TextKit 2's `NSTextList`, not literal marker characters in the buffer. See
-/// `docs/ARCHITECTURE.md` for why this exists instead of SwiftUI's own `TextEditor`.
+/// A rich-text editor backed by a real `UITextView` (iOS/iPadOS) or `NSTextView` (macOS) — real
+/// hanging indent and non-selectable list markers via TextKit 2's `NSTextList`, not literal
+/// marker characters in the buffer. This file, `RichTextEditorModel`, and `RichTextTextView` are
+/// each declared twice — once per platform, in mutually-exclusive `#if canImport(UIKit)`/
+/// `#if canImport(AppKit)` files — sharing the same public type names so this view's own body
+/// below needs almost no platform branching itself. See `docs/ARCHITECTURE.md` for why this
+/// exists instead of SwiftUI's own `TextEditor`.
 ///
 /// `delta` is the single source of truth both directions: this view decodes it once to seed the
-/// live `UITextView`, and writes back to it (debounced, and on disappear/backgrounding) as the
-/// user edits — never by replacing the whole binding wholesale mid-session, which is exactly the
+/// live text view, and writes back to it (debounced, and on disappear/backgrounding) as the user
+/// edits — never by replacing the whole binding wholesale mid-session, which is exactly the
 /// hazard that makes `TextEditor`'s own `AttributedString` binding unsafe to update from outside
 /// causes. Pair with `.onChange(of: delta)` if your host needs to react to saves, e.g. to persist
 /// to your backend.
@@ -213,8 +211,10 @@ public struct RichTextEditor: View {
                 Section {
                     TextField("Link text", text: $linkTextDraft)
                     TextField("https://example.com", text: $linkURLDraft)
+                        #if os(iOS)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
+                        #endif
                         .autocorrectionDisabled()
                 } footer: {
                     if let linkValidationError {
@@ -230,7 +230,9 @@ public struct RichTextEditor: View {
                 }
             }
             .navigationTitle(linkHasExistingURL ? "Edit Link" : "Add Link")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { showingLinkSheet = false }
@@ -331,4 +333,3 @@ public struct RichTextEditor: View {
             .foregroundStyle(.white)
     }
 }
-#endif
