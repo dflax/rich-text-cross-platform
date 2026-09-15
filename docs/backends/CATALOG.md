@@ -4,9 +4,10 @@
 `Delta` JSON column, a version/updated-at pair for optimistic concurrency, and an object-key
 image reference resolved to a URL only at read time. Anything that can satisfy that contract
 works. This file is the fuller landscape of *what* could satisfy it — every distinct storage
-technology or provider worth naming, not just the four with a written guide today
-(`postgres/`, `mysql.md`, `mongodb.md`, `firebase.md`) — so a host app's team can pick deliberately
-rather than defaulting to whatever's most familiar without seeing the alternatives.
+technology or provider worth naming, not just the five with a written guide today
+(`postgres/`, `mysql.md`, `mongodb.md`, `firebase.md`, `cloudkit.md`) — so a host app's team can
+pick deliberately rather than defaulting to whatever's most familiar without seeing the
+alternatives.
 
 Nothing here is a recommendation of one provider over another — this project has no opinion on
 that (see `docs/backends/README.md`'s "What this project does not prescribe"). Entries are
@@ -24,6 +25,7 @@ anything marked with a caveat.
 | MySQL / MariaDB | [`mysql.md`](mysql.md) | |
 | MongoDB (generic + Atlas) | [`mongodb.md`](mongodb.md) | |
 | Firebase (Firestore + Storage) | [`firebase.md`](firebase.md) | Covers Firestore specifically, not Realtime Database — see below. |
+| CloudKit | [`cloudkit.md`](cloudkit.md) | Structurally different from every other entry here — no server your app talks to, and `CKError.serverRecordChanged` hands back exactly the three records `Reconciliation.decide(base:mine:theirs:)` needs, unprompted. |
 
 ## Relational / SQL — managed and serverless flavors of Postgres/MySQL
 
@@ -100,16 +102,16 @@ differences that matter for this contract are around concurrency limits, cold st
 
 ## Apple-native (no separate backend service to run)
 
-- **CloudKit** — genuinely worth its own guidance doc given this project's Apple-platform focus:
-  a `CKRecord` per document, with `delta` as a `String`/`Data` field, syncs across a user's own
-  devices with zero backend infrastructure to operate. CloudKit has its own native conflict
-  handling (`CKError.serverRecordChanged`, carrying the server's current record) that maps onto
-  `Reconciliation.SyncDecision` more directly than a REST backend would — the server's record
-  *is* "theirs" for a three-way comparison, no extra round-trip needed to fetch it. The real
-  limitation: CloudKit's private database is scoped to one user's own iCloud account, so this is
-  a fit for personal/single-user documents, not a multi-user collaborative backend — the *public*
-  or a *shared* CKDatabase is the option if that's needed, with a materially different security
-  model to design around. Not yet written up as its own guide — see "Not yet written" below.
+- **CloudKit** — see [`cloudkit.md`](cloudkit.md), now written up in full: a `CKRecord` per
+  document, syncing across a user's own devices with zero backend infrastructure to operate, and
+  a native conflict-handling mechanism (`CKError.serverRecordChanged`) that maps onto
+  `Reconciliation.SyncDecision` more directly than any REST backend in this catalog — the error
+  hands back the server's current record, the client's attempted record, *and* the common
+  ancestor when available, which is the exact three-way shape `Reconciliation.decide(base:mine:
+  theirs:)` already expects, with no extra round-trip needed to fetch any of them. The real
+  decision the guide covers in full: private (single-user, automatic), shared (`CKShare`, genuine
+  multi-user), or public (visible to every user of your app) database — a choice CloudKit forces
+  explicitly where a REST backend lets you defer it.
 - **SwiftData + CloudKit sync** — Apple's higher-level persistence framework, with automatic
   CloudKit sync as an opt-in. Worth noting as distinct from raw CloudKit above: SwiftData's own
   sync is automatic and mostly invisible, which is convenient but gives a host app *less* direct
@@ -196,16 +198,15 @@ and already covered generically by that one fetcher).
 
 ## Not yet written, worth writing (tracked in `docs/ROADMAP.md`)
 
-Ordered by how much a dedicated doc would actually add beyond this catalog entry:
+CloudKit was the most differentiated gap on this list for an Apple-focused package — written up
+in full as [`cloudkit.md`](cloudkit.md) on 2026-09-15, verified by direct compilation against the
+real CloudKit SDK rather than written from documentation alone. Remaining, ordered by how much a
+dedicated doc would actually add beyond this catalog entry:
 
-1. **CloudKit** — the most differentiated one on this list for an Apple-focused package;
-   deserves its own guide the way `firebase.md` gets one, covering `CKRecord` shape, the
-   private/shared/public database decision, and mapping `CKError.serverRecordChanged` onto
-   `Reconciliation.SyncDecision`.
-2. **Supabase Storage** (as the `ImageFetching`/`RichTextImageUploading` target specifically) —
+1. **Supabase Storage** (as the `ImageFetching`/`RichTextImageUploading` target specifically) —
    the database side is already covered by "just Postgres"; only the image-storage side is a real
    gap, parallel to `firebase.md`'s own Storage section.
-3. **PowerSync or ElectricSQL**, whichever a host is more likely to reach for first — worth one
+2. **PowerSync or ElectricSQL**, whichever a host is more likely to reach for first — worth one
    concrete worked example of pairing an offline-first sync engine with this project's own
    `Reconciliation`, since that combination is genuinely different from "just point `ImageFetching`
    at a REST endpoint" and the existing four guides don't touch it at all.

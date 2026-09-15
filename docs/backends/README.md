@@ -29,9 +29,12 @@ don't talk to a database directly — they work in terms of a `Delta` value, an
 ## Per-backend guidance
 
 - [`backends/postgres/`](../../backends/postgres/) — a real, working schema + migration.
-- [`mysql.md`](mysql.md), [`mongodb.md`](mongodb.md), [`firebase.md`](firebase.md) — guidance
-  mapping the same contract onto each store.
+- [`mysql.md`](mysql.md), [`mongodb.md`](mongodb.md), [`firebase.md`](firebase.md),
+  [`cloudkit.md`](cloudkit.md) — guidance mapping the same contract onto each store. CloudKit is
+  the structurally different one of the four — no server your app talks to, and a real
+  private/shared/public database decision none of the others force on you — worth reading even
+  just to see how differently the same contract can be satisfied.
 - [`CATALOG.md`](CATALOG.md) — the fuller provider landscape: every distinct storage technology
-  or provider worth considering (managed Postgres/MySQL flavors, other document stores, CloudKit
-  and other Apple-native options, bundled backend-as-a-service platforms, GraphQL layers, and
-  offline-first sync engines), not just the four above with a written guide today.
+  or provider worth considering (managed Postgres/MySQL flavors, other document stores, other
+  Apple-native options, bundled backend-as-a-service platforms, GraphQL layers, and offline-first
+  sync engines), not just the five above with a written guide today.
