@@ -47,3 +47,9 @@ dist/
 # Editors
 .vscode/
 .idea/
+
+# Local-only working notes — this repo is public; anything with real business/private context
+# (see CLAUDE.md's own header) must never be tracked. Never remove this line without a
+# deliberate decision to make that content public.
+CLAUDE.md
+NOTES.md
