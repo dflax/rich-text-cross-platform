@@ -125,9 +125,23 @@ shape Apple's own "Multiplatform App" Xcode template produces — not a Mac Cata
 two separate targets. One scheme, `RichTextEditorDemo`, builds and actually ran on both
 `-destination 'platform=macOS'` and a booted iOS Simulator; the `.xcodeproj` is checked in (built
 artifacts under it are not — see `.gitignore`) so a consumer doesn't need XcodeGen installed just
-to open and run the example, only to regenerate it after a source change. Code signing is
-deliberately disabled (`CODE_SIGNING_ALLOWED: false`) since this is a sample app with no assumed
-Apple Developer Team — a real app removes that and configures its own.
+to open and run the example, only to regenerate it after a source change.
+
+**Real bug found 2026-09-15, by Daniel actually running this on his own iPhone — not caught by any
+verification the night before, since none of it touched a real device.** `project.yml` originally
+set `CODE_SIGNING_ALLOWED: false` as a workaround for building in an environment with no Apple ID
+signed into Xcode at all. That setting doesn't "skip signing when there's no team" — it forces a
+permanently unsigned binary regardless of what team gets selected in Xcode's Signing &
+Capabilities afterward. Simulator and "My Mac" runs don't enforce code signing, so this looked
+completely fine through an entire night of verification; a real device does enforce it, and
+refused to install with `LaunchExecutableValidationErrorDomain` / "The executable is not
+codesigned." Fixed by removing that setting entirely — `CODE_SIGN_STYLE: Automatic` with no team
+hardcoded is the correct default, letting a real developer's own team selection actually take
+effect. The lesson generalizes: **a signing-related setting verified only against Simulator/local-
+Mac runs is not verified for real device installs** — the two paths diverge exactly here, and nothing
+short of an actual device catches it. For CI (`.github/workflows/ci.yml`) and any other headless
+build with no team available, `CODE_SIGNING_ALLOWED=NO` is now passed as an `xcodebuild`
+command-line override instead of being baked into the shared `project.yml`.
 
 ## Packaging — verified 2026-09-14
 

@@ -32,10 +32,14 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations~ipad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         ENABLE_PREVIEWS: true
         TARGETED_DEVICE_FAMILY: "1,2"
-        # No Apple Developer Team is assumed for this sample app — ad-hoc/no signing so it
-        # builds and runs locally (Simulator, or a local Mac run) without Xcode's signing UI.
-        # A real app removes these and configures its own team/signing.
+        # Automatic signing, no team hardcoded here — pick your own team in Xcode's Signing &
+        # Capabilities tab (a free personal-team Apple ID is enough for a device you own). Do
+        # NOT set CODE_SIGNING_ALLOWED/CODE_SIGNING_REQUIRED to false here even for local
+        # Simulator/Mac testing with no team selected: that setting forces a completely unsigned
+        # binary regardless of what team is picked afterward, which builds and runs fine on
+        # Simulator/"My Mac" but a real device refuses to install outright ("The executable is
+        # not codesigned") — confirmed the hard way. For a headless/CI build with no team
+        # available, pass CODE_SIGNING_ALLOWED=NO as an xcodebuild command-line override instead
+        # of baking it into this shared project file.
         CODE_SIGN_STYLE: Automatic
-        CODE_SIGNING_REQUIRED: false
-        CODE_SIGNING_ALLOWED: false
 

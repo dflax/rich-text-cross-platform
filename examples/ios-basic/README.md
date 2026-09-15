@@ -36,6 +36,16 @@ AppKit/TextKit-2 bugs it caught that no amount of `swift build` would have). On 
 launches on Simulator and the package's own `RichTextEditorModel` test suite passes against a
 real, attached `UITextView` via `xcodebuild test -destination 'platform=iOS Simulator,…'`.
 
+**Running on a real iPhone/iPad, not just Simulator:** select the `RichTextEditorDemo` target,
+open Signing & Capabilities, and pick your own team under "Team" (a free personal-team Apple ID
+is enough for a device you own — no paid Developer Program membership required). Signing is left
+on `Automatic` with no team hardcoded in `project.yml`, deliberately: a real device refuses to
+install an app with no code signature at all, so nothing here should ever force signing off by
+default the way an earlier version of this file briefly did. If Xcode still shows a signing error
+after picking a team, try Product → Clean Build Folder first — a stale unsigned build product can
+linger. The first run on a fresh device may also need you to trust the developer certificate under
+Settings → General → VPN & Device Management, a normal iOS step unrelated to this project.
+
 **If you add, remove, or rename a source file, or change `project.yml`:**
 
 ```
@@ -46,6 +56,4 @@ xcodegen generate       # from this directory, regenerates RichTextEditorDemo.xc
 The project targets `platform: auto` with `supportedDestinations: [iOS, macOS]` — Apple's own
 "Multiplatform App" shape (one target, not Mac Catalyst, not two separate targets) — matching the
 `RichTextEditor` package's own iOS 26 / macOS 26 minimum (see `docs/ROADMAP.md`'s Decided section:
-this floor is deliberate, not being lowered). Code signing is turned off
-(`CODE_SIGNING_ALLOWED: false` in `project.yml`) since this sample assumes no Apple Developer Team
-— a real app removes that and configures its own.
+this floor is deliberate, not being lowered).

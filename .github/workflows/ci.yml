@@ -57,10 +57,14 @@ jobs:
         working-directory: examples/ios-basic
         run: xcodegen generate
       - name: Build for macOS
+        # CODE_SIGNING_ALLOWED=NO is a command-line override for this headless CI runner, which
+        # has no Apple Developer Team configured — it must NOT be baked into project.yml itself
+        # (that was tried, and forces a permanently unsigned binary that a real device then
+        # refuses to install, regardless of the team a real developer later selects in Xcode).
         working-directory: examples/ios-basic
         run: |
           xcodebuild build -project RichTextEditorDemo.xcodeproj \
-            -scheme RichTextEditorDemo -destination 'platform=macOS'
+            -scheme RichTextEditorDemo -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
       - name: Select a booted-capable iOS Simulator destination
         run: |
           DEVICE=$(xcrun simctl list devices available iOS | grep -m1 "iPhone" | sed -E 's/^[[:space:]]*([^(]+) \(([-A-F0-9]+)\).*/\2/')
@@ -69,7 +73,7 @@ jobs:
         working-directory: examples/ios-basic
         run: |
           xcodebuild build -project RichTextEditorDemo.xcodeproj \
-            -scheme RichTextEditorDemo -destination "id=$SIMULATOR_ID"
+            -scheme RichTextEditorDemo -destination "id=$SIMULATOR_ID" CODE_SIGNING_ALLOWED=NO
 
   web:
     name: Web package (npm test + typecheck)
