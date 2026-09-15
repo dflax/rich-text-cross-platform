@@ -7,18 +7,20 @@ One `Package.swift`, two products — add the repo once, depend on both products
 ```swift
 // Package.swift
 dependencies: [
-    // No tagged release yet — pin to `branch: "main"` until v0.1.0 is cut, then switch to
-    // `from: "0.1.0"`. See README.md's Quick Start for why (`from:` fails to resolve today
-    // with no tags pushed).
-    .package(url: "https://github.com/dflax/rich-text-cross-platform", branch: "main")
+    // v0.3.0 is a real, tagged release — not 1.0, the public API can still move. See README.md's
+    // Quick Start for the exact semver-range behavior this resolves to.
+    .package(url: "https://github.com/dflax/rich-text-cross-platform", from: "0.3.0")
 ],
 targets: [
     .target(name: "YourApp", dependencies: ["RichTextCore", "RichTextEditor"])
 ]
 ```
 
-Or in Xcode: File → Add Package Dependencies…, point at the repo (or "Add Local…" for a local
-checkout while iterating), select both `RichTextCore` and `RichTextEditor`.
+Or in Xcode: File → Add Package Dependencies…, paste the repo URL, and pick a dependency rule —
+"Up to Next Minor Version" starting at `0.3.0` matches the `from:` behavior above; "Exact Version"
+pins to `0.3.0` if you'd rather not pick up `0.3.x` patch updates automatically. Then select both
+`RichTextCore` and `RichTextEditor` when Xcode asks which products to link. ("Add Local…" is the
+option instead if you're pointing at a local checkout while iterating, rather than the pushed repo.)
 
 **Minimum deployment target: iOS 26 / iPadOS 26** — see `docs/ROADMAP.md`'s Decided section for
 why this isn't being lowered.

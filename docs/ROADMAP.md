@@ -58,7 +58,8 @@ continues. Update this as items move between sections; don't let it silently go 
   types that only exist in the private `rich-text-poc` fork point — dead ends for a public reader
   or an AI implementing against this package. Also renamed the two custom
   `NSAttributedString.Key`s off the private repo's name (`com.richtextpoc.*` →
-  `com.richtextcrossplatform.*`) while that's still a free, pre-v0.1.0 change.
+  `com.richtextcrossplatform.*`) while that was still a free, pre-tag change (see `v0.3.0` below —
+  no tag existed yet when this landed).
 
 ## The macOS editor, built and verified — 2026-09-14
 
@@ -127,12 +128,16 @@ managers are worth supporting. Tested directly rather than reasoned about:
   products as dependencies resolved and built cleanly (`swift build`, both `RichTextCore` and
   `RichTextEditor` compiled). Confirmed as an actual `swift build` against the real public URL,
   not inferred from `xcodebuild` runs against the local checkout.
-- **The README's own Quick Start snippet was broken** — `from: "0.1.0")` fails to resolve, because
-  no tag has ever been pushed (`git ls-remote --tags origin` is empty). Confirmed the failure
+- **`v0.3.0` tagged 2026-09-15 — Daniel's call, made deliberately, not a side effect of a docs
+  fix.** Before this, the README's own Quick Start snippet was actually broken: `from: "0.1.0")`
+  failed to resolve with no tag ever pushed (`git ls-remote --tags origin` was empty; confirmed
   directly: `error: Dependencies could not be resolved because no versions of
-  'rich-text-cross-platform' match the requirement 0.1.0..<1.0.0`. Fixed the README to
-  `branch: "main"` with a note to switch to `from:` once a release is tagged — **cutting a
-  `v0.1.0` tag is Daniel's call**, not something to do silently as a side effect of a docs fix.
+  'rich-text-cross-platform' match the requirement 0.1.0..<1.0.0`), so it was fixed to
+  `branch: "main"` with a note to switch once a release was tagged. Not a 1.0 — the public API
+  can still move — but real and working: `from: "0.3.0"` was verified against the actual pushed
+  tag (a fresh scratch consumer package resolved it to revision `8fb012f`, matching the tagged
+  commit exactly, and built both products cleanly). README.md and
+  `docs/guides/getting-started-ios.md` now both use `from: "0.3.0"` instead of `branch: "main"`.
 - **Other Swift package managers: none recommended.** SPM is Apple's own supported path and the
   one that actually got verified above. CocoaPods is in maintenance mode industry-wide; Carthage
   is effectively inactive. Adding a `.podspec` to a package whose whole premise is "clean modern
