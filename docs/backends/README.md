@@ -36,12 +36,11 @@ don't talk to a database directly — they work in terms of a `Delta` value, an
   "just Postgres" underneath, but the fork point this project came from actually ran on it — its
   guide carries a real, non-obvious lesson about optimistic concurrency under row-level security
   that only showed up by building it.
-- [`powersync-electric.md`](powersync-electric.md) — a different kind of guide: offline-first sync
-  engines that sit *downstream of* a primary database (pairing with `backends/postgres/` or
-  `supabase.md`) rather than being one themselves. Covers a real, verified integration with
-  PowerSync's Swift SDK, and why Electric (formerly ElectricSQL) currently isn't a fit for the
-  Swift editor specifically.
+- [`powersync.md`](powersync.md) — a different kind of guide: an offline-first sync engine that
+  sits *downstream of* a primary database (pairing with `backends/postgres/` or `supabase.md`)
+  rather than being one itself. Covers a real, verified integration with PowerSync's Swift SDK,
+  including where this project's own `Reconciliation` plugs into its write-back path.
 - [`CATALOG.md`](CATALOG.md) — the fuller provider landscape: every distinct storage technology
   or provider worth considering (managed Postgres/MySQL flavors, other document stores, other
   Apple-native options, bundled backend-as-a-service platforms, GraphQL layers, and other
-  offline-first sync engines), not just the six above with a written guide today.
+  offline-first sync engines), not just the seven above with a written guide today.

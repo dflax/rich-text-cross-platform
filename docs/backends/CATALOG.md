@@ -6,8 +6,8 @@ image reference resolved to a URL only at read time. Anything that can satisfy t
 works. This file is the fuller landscape of *what* could satisfy it — every distinct storage
 technology or provider worth naming, not just the ones with a written guide today
 (`postgres/`, `mysql.md`, `mongodb.md`, `firebase.md`, `cloudkit.md`, `supabase.md`,
-`powersync-electric.md`) — so a host app's team can pick deliberately rather than defaulting to
-whatever's most familiar without seeing the alternatives.
+`powersync.md`) — so a host app's team can pick deliberately rather than defaulting to whatever's
+most familiar without seeing the alternatives.
 
 Nothing here is a recommendation of one provider over another — this project has no opinion on
 that (see `docs/backends/README.md`'s "What this project does not prescribe"). Entries are
@@ -27,7 +27,7 @@ anything marked with a caveat.
 | Firebase (Firestore + Storage) | [`firebase.md`](firebase.md) | Covers Firestore specifically, not Realtime Database — see below. |
 | CloudKit | [`cloudkit.md`](cloudkit.md) | Structurally different from every other entry here — no server your app talks to, and `CKError.serverRecordChanged` hands back exactly the three records `Reconciliation.decide(base:mine:theirs:)` needs, unprompted. |
 | Supabase | [`supabase.md`](supabase.md) | "Just Postgres" underneath (`postgres/`'s schema applies), but the fork point this project came from actually ran on it — real lessons on RLS + optimistic concurrency, not generic guidance. |
-| PowerSync / Electric | [`powersync-electric.md`](powersync-electric.md) | Not a primary database — an offline-first sync layer downstream of one. PowerSync has a real Swift SDK verified directly; Electric (formerly ElectricSQL) currently doesn't, for either platform. |
+| PowerSync | [`powersync.md`](powersync.md) | Not a primary database — an offline-first sync layer downstream of one, with a real Swift SDK verified directly against the actual package. |
 
 ## Relational / SQL — managed and serverless flavors of Postgres/MySQL
 
@@ -175,11 +175,9 @@ three-way comparison is designed to sit alongside — most relevant to a host ap
 real offline editing, not just offline *reading* (`ImageStore` already covers offline image reads
 regardless of which of these, if any, is used for the document data itself).
 
-- **PowerSync and Electric (formerly ElectricSQL)** — see [`powersync-electric.md`](powersync-electric.md),
-  now written up in full, including the one finding worth knowing before picking between them:
-  PowerSync has a real, verified Swift SDK; Electric's current client libraries are TypeScript/
-  React/Elixir only, with no Swift client as of this writing. For this project's own Swift editor,
-  that decides most of the practical question before the architecture comparison even starts.
+- **PowerSync** — see [`powersync.md`](powersync.md), now written up in full: a real, verified
+  Swift SDK, with a write-back hook (`uploadData(database:)`) that composes with this project's
+  own `Reconciliation` rather than competing with it.
 - **Realm / Atlas Device Sync** (MongoDB-owned) — an embedded object database with a managed sync
   service; the natural pairing for a host already on MongoDB Atlas (see `mongodb.md`) that wants
   the sync engine to handle conflict resolution rather than driving `Reconciliation` manually.
@@ -202,9 +200,8 @@ and already covered generically by that one fetcher).
 Every gap this section used to name is closed as of 2026-09-15: CloudKit
 ([`cloudkit.md`](cloudkit.md), verified by direct compilation against the real CloudKit SDK),
 Supabase including its Storage side ([`supabase.md`](supabase.md), grounded in the fork point's
-own real usage), and a worked offline-first sync example
-([`powersync-electric.md`](powersync-electric.md), verified against PowerSync's real Swift SDK and
-Electric's current documentation). Nothing currently queued here — the next gap worth writing up
+own real usage), and a worked offline-first sync example ([`powersync.md`](powersync.md), verified
+against PowerSync's real Swift SDK). Nothing currently queued here — the next gap worth writing up
 would be whichever of the still-catalog-only entries above (Neon, CockroachDB, DynamoDB, Couchbase,
 Realm, Appwrite, Convex, …) a real integration actually needs next, rather than picking one
 speculatively.

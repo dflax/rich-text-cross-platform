@@ -1,27 +1,17 @@
-# Offline-first sync engines: PowerSync and Electric
+# PowerSync
 
 Guidance, not shipped code — see [`README.md`](README.md) for why this project doesn't ship an
-adapter per store. These two are a different *kind* of entry than every other guide in this
-catalog: neither is a primary database. Both sit **downstream of** one (Postgres, in both cases
-here — pairing naturally with `backends/postgres/` or [`supabase.md`](supabase.md)), keeping a
-reactive, queryable local copy in sync with it. That's a genuinely different integration shape
-than "point `ImageFetching` at a REST endpoint," which is why this gets its own guide rather than
-a `CATALOG.md` entry.
+adapter per store. PowerSync is a different *kind* of entry than every other guide in this catalog:
+it isn't a primary database. It sits **downstream of** one (Postgres here — pairing naturally with
+`backends/postgres/` or [`supabase.md`](supabase.md)), keeping a reactive, queryable local copy in
+sync with it. That's a genuinely different integration shape than "point `ImageFetching` at a REST
+endpoint," which is why this gets its own guide rather than a `CATALOG.md` entry.
 
-Researched directly against each project's current documentation and, for PowerSync, its real
-Swift SDK — verified by resolving the actual SPM package and reading its shipped source and demo
-code, not written from memory or documentation alone. Both products move fast; verify the
-specifics below (especially client support) before depending on them.
+Verified directly, not written from documentation alone: the real Swift SPM package was resolved
+and built, and the code below is read straight from its shipped source and official demo, not
+paraphrased from memory.
 
-**The headline finding, upfront: these two are not interchangeable for this project.** PowerSync
-has a real, working Swift SDK. Electric (the current name for what was ElectricSQL) does not, as
-of this writing — its client libraries are TypeScript, React, and Elixir only. For a Swift-first
-editor, that asymmetry decides most of the practical question before the architecture comparison
-even starts.
-
-## PowerSync
-
-### Architecture
+## Architecture
 
 PowerSync syncs a Postgres (or MongoDB/MySQL/SQL Server) backend to an **embedded SQLite database
 on the client**, through a hosted or self-hosted "PowerSync Service" that consumes your database's
@@ -43,7 +33,7 @@ same posture this project's own `Reconciliation.decide(base:mine:theirs:)` takes
 conflict, never resolve one silently), so the two compose rather than duplicate or fight each
 other.
 
-### The Swift SDK — real, verified
+## The Swift SDK — real, verified
 
 ```swift
 .package(url: "https://github.com/powersync-ja/powersync-swift", from: "1.0.0")
@@ -90,7 +80,7 @@ string byte-for-byte, the same choice `cloudkit.md` makes and for the same reaso
 already does (see `docs/ARCHITECTURE.md`/`PROVENANCE.md` for why that specific failure mode was
 worth naming elsewhere in this project).
 
-### The write-back connector — where `Reconciliation` actually plugs in
+## The write-back connector — where `Reconciliation` actually plugs in
 
 PowerSync's own official Supabase demo (`Demos/GRDBDemo` in the `powersync-swift` repo) shows the
 shape directly — read straight from the SDK's own shipped source, not paraphrased:
@@ -139,41 +129,3 @@ case .patch where entry.table == "documents":
 This is real, non-trivial integration work — PowerSync's CRUD queue gives you *an* op to apply,
 not a conflict-aware write by default — but it's exactly the kind of place this project's own
 `Reconciliation` was designed to slot into rather than be redundant with.
-
-## Electric (formerly ElectricSQL)
-
-### What it actually is now — a real pivot, not a rename
-
-Electric markets itself today as **"a read-path sync engine for Postgres"** — that phrasing is
-load-bearing, not marketing color. It syncs data **out of** Postgres to clients efficiently
-(partial replication via a "Shape" — a table subset defined by a `WHERE` clause — streamed over
-plain HTTP, backed by Postgres logical replication), and is explicit that **writes go back through
-your own API**, documented under its own "Writes" guide as "patterns for writing data back through
-your API" rather than as a built-in bidirectional sync path. This is a genuine architectural
-choice, not a missing feature — Electric is solving "efficient fan-out reads to many concurrent
-clients" as its core problem, not "make writes offline-capable," and says so.
-
-**No Swift client.** Electric's client libraries are TypeScript, React, and Elixir. There is
-nothing here for the native Swift editor this project ships — this isn't a gap to work around
-today, it's a real, current limit worth re-checking before it changes anyone's plans, given how
-fast this specific space moves (Electric itself is mid-rebrand from "ElectricSQL" as of this
-writing).
-
-### Where it could still fit this project
-
-Not the Swift editor — the **web package** (`web/packages/rich-text-editor`, Quill-based,
-genuinely web/TypeScript). A web-based collaborative reading/editing surface with many concurrent
-viewers of the same document is exactly Electric's stated strength (efficient fan-out to many
-clients), and its client is a real fit for that package specifically, unlike the Swift side. Writes
-would still go through a conventional API endpoint calling `update_document()` directly — Electric
-wouldn't replace that path, only make the read side (watching a document update live as other
-users edit it) cheaper to build than hand-rolled polling or a bespoke WebSocket layer.
-
-### Recommendation given this project's shape
-
-**PowerSync, if you want offline-first sync for the Swift editor at all** — it has the Swift SDK,
-a real official Supabase integration to build from, and a write-path hook that composes with
-`Reconciliation` rather than competing with it. **Electric, only for the web package's read side,
-and only revisit for the Swift side if/when it ships a native client** — check its current client
-list before assuming that hasn't changed, since this whole space (including Electric's own
-naming) has moved meaningfully even within this project's own lifetime.

@@ -49,22 +49,18 @@ continues. Update this as items move between sections; don't let it silently go 
   consistency proof, not just a claim. `npx tsc --noEmit` clean. Ships as TypeScript source
   (no build step yet) — see below.
 - **`docs/backends/mysql.md`, `mongodb.md`, `firebase.md`, `cloudkit.md`, `supabase.md`,
-  `powersync-electric.md`** — written guidance mapping the storage contract
-  (`docs/backends/README.md`) onto each store. `cloudkit.md` (added 2026-09-15) is verified by
-  direct compilation against the real CloudKit SDK (`CKError.serverRecord`/`.clientRecord`/
-  `.ancestorRecord`, `CKRecord.recordChangeTag`, `CKRecord.ID(recordName:zoneID:)`,
-  `CKDatabase.save(_:)` async, `CKAsset`, all confirmed to exist and typecheck, not assumed from
-  documentation), and covers the one decision none of the other guides force: private vs. shared
-  vs. public database. `supabase.md` (added 2026-09-15) is grounded in the fork point's own real
-  Supabase integration, not generic advice — including a real, non-obvious lesson that an empty
-  result from `update_document()` is ambiguous under RLS (stale version vs. a blocked write look
-  identical) in a way it isn't on plain Postgres. `powersync-electric.md` (added 2026-09-15) is
-  verified by resolving PowerSync's actual Swift SPM package and reading its shipped source/demo
-  code directly, and by researching Electric's (formerly ElectricSQL's) current documentation —
-  the headline finding being that PowerSync has a real Swift SDK and Electric currently doesn't,
-  which decides most of the practical question for this project's own editor before any
-  architecture comparison. `docs/backends/CATALOG.md` covers the fuller provider landscape beyond
-  these guides.
+  `powersync.md`** — written guidance mapping the storage contract (`docs/backends/README.md`)
+  onto each store. `cloudkit.md` (added 2026-09-15) is verified by direct compilation against the
+  real CloudKit SDK (`CKError.serverRecord`/`.clientRecord`/`.ancestorRecord`,
+  `CKRecord.recordChangeTag`, `CKRecord.ID(recordName:zoneID:)`, `CKDatabase.save(_:)` async,
+  `CKAsset`, all confirmed to exist and typecheck, not assumed from documentation), and covers the
+  one decision none of the other guides force: private vs. shared vs. public database.
+  `supabase.md` (added 2026-09-15) is grounded in the fork point's own real Supabase integration,
+  not generic advice — including a real, non-obvious lesson that an empty result from
+  `update_document()` is ambiguous under RLS (stale version vs. a blocked write look identical) in
+  a way it isn't on plain Postgres. `powersync.md` (added 2026-09-15) is verified by resolving
+  PowerSync's actual Swift SPM package and reading its shipped source/demo code directly.
+  `docs/backends/CATALOG.md` covers the fuller provider landscape beyond these guides.
 - **License, minimum OS, and the macOS editor commitment** — see "Decided" below.
 - **Scrubbed internal proof-point references** (`P1`–`P10`, `U1`–`U7`, "Build Order step N", and
   stale pre-extraction type names like `UIKitEditorModel`/`DeltaCodec`/`SegmentedDocument`) out of
