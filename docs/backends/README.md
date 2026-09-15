@@ -30,11 +30,18 @@ don't talk to a database directly — they work in terms of a `Delta` value, an
 
 - [`backends/postgres/`](../../backends/postgres/) — a real, working schema + migration.
 - [`mysql.md`](mysql.md), [`mongodb.md`](mongodb.md), [`firebase.md`](firebase.md),
-  [`cloudkit.md`](cloudkit.md) — guidance mapping the same contract onto each store. CloudKit is
-  the structurally different one of the four — no server your app talks to, and a real
-  private/shared/public database decision none of the others force on you — worth reading even
-  just to see how differently the same contract can be satisfied.
+  [`cloudkit.md`](cloudkit.md), [`supabase.md`](supabase.md) — guidance mapping the same contract
+  onto each store. CloudKit is the structurally different one — no server your app talks to, and
+  a real private/shared/public database decision none of the others force on you. Supabase is
+  "just Postgres" underneath, but the fork point this project came from actually ran on it — its
+  guide carries a real, non-obvious lesson about optimistic concurrency under row-level security
+  that only showed up by building it.
+- [`powersync-electric.md`](powersync-electric.md) — a different kind of guide: offline-first sync
+  engines that sit *downstream of* a primary database (pairing with `backends/postgres/` or
+  `supabase.md`) rather than being one themselves. Covers a real, verified integration with
+  PowerSync's Swift SDK, and why Electric (formerly ElectricSQL) currently isn't a fit for the
+  Swift editor specifically.
 - [`CATALOG.md`](CATALOG.md) — the fuller provider landscape: every distinct storage technology
   or provider worth considering (managed Postgres/MySQL flavors, other document stores, other
-  Apple-native options, bundled backend-as-a-service platforms, GraphQL layers, and offline-first
-  sync engines), not just the five above with a written guide today.
+  Apple-native options, bundled backend-as-a-service platforms, GraphQL layers, and other
+  offline-first sync engines), not just the six above with a written guide today.

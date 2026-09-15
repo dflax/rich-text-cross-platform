@@ -4,10 +4,10 @@
 `Delta` JSON column, a version/updated-at pair for optimistic concurrency, and an object-key
 image reference resolved to a URL only at read time. Anything that can satisfy that contract
 works. This file is the fuller landscape of *what* could satisfy it — every distinct storage
-technology or provider worth naming, not just the five with a written guide today
-(`postgres/`, `mysql.md`, `mongodb.md`, `firebase.md`, `cloudkit.md`) — so a host app's team can
-pick deliberately rather than defaulting to whatever's most familiar without seeing the
-alternatives.
+technology or provider worth naming, not just the ones with a written guide today
+(`postgres/`, `mysql.md`, `mongodb.md`, `firebase.md`, `cloudkit.md`, `supabase.md`,
+`powersync-electric.md`) — so a host app's team can pick deliberately rather than defaulting to
+whatever's most familiar without seeing the alternatives.
 
 Nothing here is a recommendation of one provider over another — this project has no opinion on
 that (see `docs/backends/README.md`'s "What this project does not prescribe"). Entries are
@@ -26,6 +26,8 @@ anything marked with a caveat.
 | MongoDB (generic + Atlas) | [`mongodb.md`](mongodb.md) | |
 | Firebase (Firestore + Storage) | [`firebase.md`](firebase.md) | Covers Firestore specifically, not Realtime Database — see below. |
 | CloudKit | [`cloudkit.md`](cloudkit.md) | Structurally different from every other entry here — no server your app talks to, and `CKError.serverRecordChanged` hands back exactly the three records `Reconciliation.decide(base:mine:theirs:)` needs, unprompted. |
+| Supabase | [`supabase.md`](supabase.md) | "Just Postgres" underneath (`postgres/`'s schema applies), but the fork point this project came from actually ran on it — real lessons on RLS + optimistic concurrency, not generic guidance. |
+| PowerSync / Electric | [`powersync-electric.md`](powersync-electric.md) | Not a primary database — an offline-first sync layer downstream of one. PowerSync has a real Swift SDK verified directly; Electric (formerly ElectricSQL) currently doesn't, for either platform. |
 
 ## Relational / SQL — managed and serverless flavors of Postgres/MySQL
 
@@ -34,13 +36,13 @@ All of these speak the Postgres or MySQL wire protocol, so `postgres/`'s schema 
 differences that matter for this contract are around concurrency limits, cold starts, and how
 `gen_random_uuid()`/optimistic-locking triggers are enabled, not the schema shape itself.
 
-- **Supabase** — Postgres, plus bundled auth/storage/realtime. Already gets a section in
-  `backends/postgres/README.md` ("just Postgres," runs the same migration unchanged) since it's
-  the fork point's own original backend; doesn't have a *dedicated* guide file yet because there's
-  little to add beyond "run `backends/postgres/migrations/001_documents.sql`." A dedicated
-  `supabase.md` would mainly be worth writing to cover Supabase Storage specifically as the
-  `ImageFetching`/`RichTextImageUploading` target (parallel to `firebase.md`'s Storage section) —
-  see "Not yet written, worth writing" below.
+- **Supabase** — see [`supabase.md`](supabase.md), now written up in full: Postgres underneath
+  (`postgres/`'s schema and `update_document()` apply close to unchanged), plus bundled auth,
+  storage, and RLS. It's the fork point's own original backend, so the guide carries real,
+  hard-won lessons rather than generic advice — most notably that an empty result from
+  `update_document()` is genuinely ambiguous under RLS (stale version vs. a write the policy
+  blocked look identical) in a way it isn't on plain Postgres, and the fix is to re-read the row
+  rather than assume staleness.
 - **Neon** — serverless Postgres with instant branching (a full copy-on-write branch per PR/
   environment). The interesting property for this contract: branching gives you a free, real
   Postgres copy for testing the `update_document()` concurrency function against concurrent
@@ -173,12 +175,11 @@ three-way comparison is designed to sit alongside — most relevant to a host ap
 real offline editing, not just offline *reading* (`ImageStore` already covers offline image reads
 regardless of which of these, if any, is used for the document data itself).
 
-- **PowerSync** — a sync engine that layers real-time, offline-first sync on top of an existing
-  Postgres or MySQL database (including Supabase) without requiring a schema rewrite. Likely the
-  most natural fit for a host already using `backends/postgres/`'s schema who wants offline
-  editing without adopting a different primary database.
-- **ElectricSQL** — a similar local-first Postgres sync engine, with an embedded SQLite (or
-  PGlite) client-side store that stays live-synced with a Postgres server.
+- **PowerSync and Electric (formerly ElectricSQL)** — see [`powersync-electric.md`](powersync-electric.md),
+  now written up in full, including the one finding worth knowing before picking between them:
+  PowerSync has a real, verified Swift SDK; Electric's current client libraries are TypeScript/
+  React/Elixir only, with no Swift client as of this writing. For this project's own Swift editor,
+  that decides most of the practical question before the architecture comparison even starts.
 - **Realm / Atlas Device Sync** (MongoDB-owned) — an embedded object database with a managed sync
   service; the natural pairing for a host already on MongoDB Atlas (see `mongodb.md`) that wants
   the sync engine to handle conflict resolution rather than driving `Reconciliation` manually.
@@ -198,15 +199,12 @@ and already covered generically by that one fetcher).
 
 ## Not yet written, worth writing (tracked in `docs/ROADMAP.md`)
 
-CloudKit was the most differentiated gap on this list for an Apple-focused package — written up
-in full as [`cloudkit.md`](cloudkit.md) on 2026-09-15, verified by direct compilation against the
-real CloudKit SDK rather than written from documentation alone. Remaining, ordered by how much a
-dedicated doc would actually add beyond this catalog entry:
-
-1. **Supabase Storage** (as the `ImageFetching`/`RichTextImageUploading` target specifically) —
-   the database side is already covered by "just Postgres"; only the image-storage side is a real
-   gap, parallel to `firebase.md`'s own Storage section.
-2. **PowerSync or ElectricSQL**, whichever a host is more likely to reach for first — worth one
-   concrete worked example of pairing an offline-first sync engine with this project's own
-   `Reconciliation`, since that combination is genuinely different from "just point `ImageFetching`
-   at a REST endpoint" and the existing four guides don't touch it at all.
+Every gap this section used to name is closed as of 2026-09-15: CloudKit
+([`cloudkit.md`](cloudkit.md), verified by direct compilation against the real CloudKit SDK),
+Supabase including its Storage side ([`supabase.md`](supabase.md), grounded in the fork point's
+own real usage), and a worked offline-first sync example
+([`powersync-electric.md`](powersync-electric.md), verified against PowerSync's real Swift SDK and
+Electric's current documentation). Nothing currently queued here — the next gap worth writing up
+would be whichever of the still-catalog-only entries above (Neon, CockroachDB, DynamoDB, Couchbase,
+Realm, Appwrite, Convex, …) a real integration actually needs next, rather than picking one
+speculatively.
