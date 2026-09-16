@@ -5,10 +5,16 @@ name: CI
 # AppKit here, no simulator needed), an iOS Simulator destination for RichTextEditor's iOS half,
 # the example app's own multiplatform build, and the web package's own test/typecheck.
 #
-# Requires a macOS runner with an Xcode version whose SDKs include iOS 26 / macOS 26 (this
-# package's deployment floor — see docs/ROADMAP.md's Decided section for why that isn't being
-# lowered). Pin `xcode-version` below once a specific GitHub-hosted runner image is confirmed to
-# carry that SDK; `latest-stable` is a placeholder, not a verified pin.
+# Requires a macOS runner whose *host OS* is 26, not just an Xcode version whose SDKs cover it —
+# this package's deployment floor is iOS 26 / macOS 26 (see docs/ROADMAP.md's Decided section for
+# why that isn't being lowered), and macOS-26-only runtime symbols (e.g. SwiftUI's
+# `GlassEffectContainer`) fail to dynamically link on an older host even when Xcode itself
+# supports the newer SDK. `runs-on: macos-15` was tried first and failed on exactly this — 9/9 CI
+# runs red, `xcodebuild: error: ... doesn't support My Mac's macOS 15.7.9` and a `dlopen` failure
+# on `GlassEffectContainer`. `macos-26` is now a published GitHub-hosted runner image
+# (`actions/runner-images`) and is the minimum this workflow supports — there is no macOS-15
+# fallback path, matching the product's own floor. Pin `xcode-version` below once a specific image
+# is confirmed to carry the right SDK; `latest-stable` is a placeholder, not a verified pin.
 
 on:
   push:
@@ -19,7 +25,7 @@ on:
 jobs:
   swift-test:
     name: swift test (RichTextCore + macOS RichTextEditor)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - uses: maxim-lobanov/setup-xcode@v1
@@ -29,7 +35,7 @@ jobs:
 
   ios-simulator:
     name: xcodebuild test (iOS half of RichTextEditor)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - uses: maxim-lobanov/setup-xcode@v1
@@ -38,6 +44,12 @@ jobs:
       - name: Select a booted-capable iOS Simulator destination
         run: |
           DEVICE=$(xcrun simctl list devices available iOS | grep -m1 "iPhone" | sed -E 's/^[[:space:]]*([^(]+) \(([-A-F0-9]+)\).*/\2/')
+          if [ -z "$DEVICE" ]; then
+            echo "::error::No available iOS Simulator device found (xcrun simctl list devices available iOS returned nothing matching 'iPhone')."
+            xcrun simctl list devices available iOS
+            exit 1
+          fi
+          echo "Resolved iOS Simulator device: $DEVICE"
           echo "SIMULATOR_ID=$DEVICE" >> "$GITHUB_ENV"
       - run: |
           xcodebuild test -scheme RichTextCrossPlatform-Package \
@@ -45,7 +57,7 @@ jobs:
 
   example-app:
     name: Example app builds (macOS + iOS Simulator)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - uses: maxim-lobanov/setup-xcode@v1
@@ -68,6 +80,12 @@ jobs:
       - name: Select a booted-capable iOS Simulator destination
         run: |
           DEVICE=$(xcrun simctl list devices available iOS | grep -m1 "iPhone" | sed -E 's/^[[:space:]]*([^(]+) \(([-A-F0-9]+)\).*/\2/')
+          if [ -z "$DEVICE" ]; then
+            echo "::error::No available iOS Simulator device found (xcrun simctl list devices available iOS returned nothing matching 'iPhone')."
+            xcrun simctl list devices available iOS
+            exit 1
+          fi
+          echo "Resolved iOS Simulator device: $DEVICE"
           echo "SIMULATOR_ID=$DEVICE" >> "$GITHUB_ENV"
       - name: Build for iOS Simulator
         working-directory: examples/rich-text-editor-demo
