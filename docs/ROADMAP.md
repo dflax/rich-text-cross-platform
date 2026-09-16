@@ -109,8 +109,9 @@ Simulator-only and via Accessibility-API automation on an unsigned local build a
 Daniel has since installed and run this on his own Mac and iOS hardware directly and confirmed:
 real typing and toolbar formatting; the Liquid Glass toolbar's visual polish, eyeballed live
 on-device next to iOS chrome, not just the functional correctness verified earlier; and
-`RichTextEditorNSTextView.paste(_:)` against a real rich paste from Notes on macOS — the agreed
-formatting subset is stripped and the rest preserved correctly, not just passing its own
+`RichTextEditorNSTextView.paste(_:)` against a real rich paste from both Notes and Safari on
+macOS — the same two apps the iOS paste-hardening tests were originally validated against — the
+agreed formatting subset is stripped and the rest preserved correctly, not just passing its own
 unit-level assumptions. Still open: the same pass on real Vision Pro hardware — see "visionOS
 support" below, which remains Simulator-only.
 
@@ -257,9 +258,17 @@ managers are worth supporting. Tested directly rather than reasoned about:
 - **XcodeGen stays** as the example app's project-generation tool. No hand-maintained
   `.xcodeproj` migration planned; the diffability/merge-conflict trade-off that motivated XcodeGen
   in the first place hasn't changed.
-- **The SwiftUI `TextEditor`-based editor path stays unported.** Confirmed, not just left
-  unrevisited by default — no proven benefit over the shipped `NSTextView`/`UITextView` editors
-  (see `PROVENANCE.md`'s "What was deliberately not ported").
+- **The SwiftUI `TextEditor`-based editor path stays unported, with a specific reopening
+  condition — Daniel's call, 2026-09-16.** Not a vague "no proven benefit": the POC actually built
+  and compared it (see `PROVENANCE.md`'s "What was deliberately not ported"), and it failed on a
+  concrete dealbreaker — `TextEditor()` couldn't properly support lists with real list markers,
+  plus other issues on top of that. **Reopen when Apple ships a `TextEditor()` update with proper
+  list-marker support.** Daniel's expectation is that such an update would land cross-platform
+  (iOS/macOS/visionOS at once, the way SwiftUI APIs generally do) — if and when that happens, a
+  single `TextEditor()`-based implementation is *preferred* over today's two structurally
+  different editors (`UITextView` on iOS/iPadOS/visionOS, `NSTextView` on macOS) sharing type
+  names via `#if canImport`, not just an equally-valid alternative to it. Until then, nothing
+  changes: this is a watch condition, not a task with a deadline.
 
 ## CI — green as of 2026-09-16
 

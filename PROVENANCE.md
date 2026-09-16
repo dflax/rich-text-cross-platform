@@ -59,11 +59,13 @@ backend's implementation" posture as the Swift side.
 ## What was deliberately not ported
 
 - `DeltaCodec.swift`, `Segmentation.swift`, `ListMarkerSync.swift`, `FormattingDefinition.swift` —
-  the SwiftUI `TextEditor`/`AttributedString`-based editor path and its literal-marker-injection
-  workaround. Porting both editor implementations would double the public API surface of
-  something meant to be a tight, single-purpose component. If SwiftUI's own text editing APIs
-  close the gap that motivated building on UIKit in the first place, that's worth revisiting —
-  see `docs/ROADMAP.md`.
+  the SwiftUI `TextEditor`/`AttributedString`-based editor path. `ListMarkerSync.swift`'s
+  literal-marker-injection workaround was itself the tell: `TextEditor()` had no way to render a
+  real, non-selectable list marker, a dealbreaker Daniel confirmed 2026-09-16 (see
+  `docs/ROADMAP.md`'s Decided section for the specific reopening condition — a future
+  `TextEditor()` update with proper list-marker support). Porting both editor implementations
+  would also have doubled the public API surface of something meant to be a tight, single-purpose
+  component.
 - `ImageStoreLiveTests.swift` — an opt-in test hardcoded to the POC's own throwaway Backblaze B2
   bucket and a specific object key that only exists there. Not meaningful outside that bucket.
 - Everything backend-specific: the POC's Supabase-schema sync engine, SwiftData caching layer,
