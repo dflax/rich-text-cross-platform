@@ -29,5 +29,5 @@ drives. Build your own controls against its public surface:
 Every one of these already enforces the shared vocabulary (see `vocabulary-enforcement.md`) —
 nothing about building your own toolbar UI weakens that.
 
-See [`../../examples/ios-basic/RichTextEditorDemo/CustomToolbarEditorView.swift`](../../examples/ios-basic/RichTextEditorDemo/CustomToolbarEditorView.swift)
+See [`../../examples/rich-text-editor-demo/RichTextEditorDemo/CustomToolbarEditorView.swift`](../../examples/rich-text-editor-demo/RichTextEditorDemo/CustomToolbarEditorView.swift)
 for a complete, minimal example.

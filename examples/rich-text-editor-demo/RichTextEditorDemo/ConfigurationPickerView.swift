@@ -16,6 +16,11 @@ struct ConfigurationPickerView: View {
                 } footer: {
                     Text("Each screen edits its own in-memory document — nothing here talks to a real backend. See docs/guides/getting-started-ios.md for wiring a real ImageStore/RichTextImageUploading.")
                 }
+                Section {
+                    NavigationLink("SwiftData persistence", value: Demo.swiftData)
+                } footer: {
+                    Text("Documents here are saved for real — create one, force-quit the app, and it's still there. See SwiftDataEditorView.swift.")
+                }
             }
             .navigationTitle("RichTextEditor Demo")
             .navigationDestination(for: Demo.self) { demo in
@@ -23,13 +28,14 @@ struct ConfigurationPickerView: View {
                 case .minimal: MinimalEditorView()
                 case .withImages: ImageUploadEditorView()
                 case .customToolbar: CustomToolbarEditorView()
+                case .swiftData: SwiftDataEditorView()
                 }
             }
         }
     }
 
     private enum Demo: Hashable {
-        case minimal, withImages, customToolbar
+        case minimal, withImages, customToolbar, swiftData
     }
 }
 

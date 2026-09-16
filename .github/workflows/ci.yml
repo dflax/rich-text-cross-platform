@@ -54,14 +54,14 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Regenerate the example app's Xcode project
-        working-directory: examples/ios-basic
+        working-directory: examples/rich-text-editor-demo
         run: xcodegen generate
       - name: Build for macOS
         # CODE_SIGNING_ALLOWED=NO is a command-line override for this headless CI runner, which
         # has no Apple Developer Team configured — it must NOT be baked into project.yml itself
         # (that was tried, and forces a permanently unsigned binary that a real device then
         # refuses to install, regardless of the team a real developer later selects in Xcode).
-        working-directory: examples/ios-basic
+        working-directory: examples/rich-text-editor-demo
         run: |
           xcodebuild build -project RichTextEditorDemo.xcodeproj \
             -scheme RichTextEditorDemo -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
@@ -70,7 +70,7 @@ jobs:
           DEVICE=$(xcrun simctl list devices available iOS | grep -m1 "iPhone" | sed -E 's/^[[:space:]]*([^(]+) \(([-A-F0-9]+)\).*/\2/')
           echo "SIMULATOR_ID=$DEVICE" >> "$GITHUB_ENV"
       - name: Build for iOS Simulator
-        working-directory: examples/ios-basic
+        working-directory: examples/rich-text-editor-demo
         run: |
           xcodebuild build -project RichTextEditorDemo.xcodeproj \
             -scheme RichTextEditorDemo -destination "id=$SIMULATOR_ID" CODE_SIGNING_ALLOWED=NO

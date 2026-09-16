@@ -107,7 +107,7 @@ called Supabase's REST/RPC endpoints directly over `URLSession` — four endpoin
 select, the `update_document` RPC) is the entire integration surface this project needs, and at
 the time, adding a remote SPM dependency to a hand-maintained `.xcodeproj` was a real, specific
 cost. That specific obstacle doesn't apply to a project using a generated or Xcode-managed project
-(see `examples/ios-basic/`'s own `.xcodeproj`, built with XcodeGen) — for a new integration, the
+(see `examples/rich-text-editor-demo/`'s own `.xcodeproj`, built with XcodeGen) — for a new integration, the
 official `supabase-swift` SDK is the more maintainable default; reaching for plain `URLSession`
 calls the way the fork point did is a reasonable choice specifically when you want the exact wire
 contract visible in your own code rather than behind an SDK's abstraction, not a default.

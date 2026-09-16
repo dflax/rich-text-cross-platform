@@ -99,7 +99,7 @@ RichTextEditor(
 ```
 
 See [`custom-toolbar.md`](custom-toolbar.md) for replacing the toolbar entirely, and
-[`../../examples/ios-basic/`](../../examples/ios-basic/) for all three shown side by side.
+[`../../examples/rich-text-editor-demo/`](../../examples/rich-text-editor-demo/) for all three shown side by side.
 
 ## Saving reliably
 

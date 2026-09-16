@@ -56,7 +56,7 @@ npm run typecheck
 
 - A real build step producing a publishable `dist/`.
 - Image upload wiring / a sample app showing multiple configurations (the iOS side has this in
-  `examples/ios-basic/`; the web equivalent doesn't exist yet).
+  `examples/rich-text-editor-demo/`; the web equivalent doesn't exist yet).
 - Porting the fork point's full round-trip test suite (this package's `test/round-trip.test.ts`
   is a real but smaller subset — it proves byte-identity and vocabulary membership across the
   whole corpus, not yet the fork point's additional coalescing/idempotence/image-edge-case

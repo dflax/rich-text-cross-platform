@@ -26,6 +26,35 @@ don't talk to a database directly — they work in terms of a `Delta` value, an
 - Automatic conflict resolution. `Reconciliation` surfaces a conflict; deciding what a user sees
   and how they resolve it is your product's call.
 
+## Why this looks like a Quill backend, because it is one
+
+`Delta` here is not "Quill-inspired" or "Quill-compatible" — it's Quill's own `{"ops": [...]}`
+format, unmodified, decoded and re-encoded byte-for-byte the same way on iOS, macOS, and the web
+package (`web/packages/rich-text-editor` wraps Quill itself). If you already have a Quill
+deployment — a plain `quill.js` editor, any Quill-based product, or a backend built against
+[Quill's own documented Delta format](https://quilljs.com/docs/delta/) — the storage contract
+above is not a new thing to design. It's the same contract, because it's the same document format:
+
+- A "document" row that already stores Quill's Delta JSON already satisfies the Content row above.
+  Nothing about adding this project's native iOS/macOS editors requires a migration, a new column,
+  or a transform step — the same row a `quill.js` frontend reads and writes today is what
+  `NSDeltaCodec` decodes on the client side.
+- The version/concurrency and image-key requirements above aren't new constraints this project is
+  imposing — they're the same considerations any multi-writer Quill deployment already has to
+  solve (or has already solved) once more than one client can edit the same document. This project
+  just writes them down explicitly and gives the native side (`Reconciliation.decide`) an actual
+  implementation to plug into.
+- The one place native and web genuinely diverge is *rendering* the vocabulary a document is
+  allowed to contain — `Vocabulary.swift` (Swift) and `vocabulary.ts` (web) both enforce the same
+  allowed-ops list, checked against the same fixture corpus (`fixtures/`) in both languages' test
+  suites, specifically so a document one platform considers valid can't be silently rejected or
+  mis-rendered by the other.
+
+In short: adding a native editor on top of an existing Quill/web product is additive, not a
+parallel format to keep in sync by hand. The web package is a thinner wrapper around Quill itself,
+not a reimplementation, so "does this work with our existing Quill setup" is closer to "yes,
+already" than "here's the migration plan."
+
 ## Per-backend guidance
 
 - [`backends/postgres/`](../../backends/postgres/) — a real, working schema + migration.

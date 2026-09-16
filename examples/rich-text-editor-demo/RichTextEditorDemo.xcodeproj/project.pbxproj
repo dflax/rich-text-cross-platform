@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		566FF6C63054C18EF7E9FEFC /* ImageUploadEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21282EA5D406401A799CD3EB /* ImageUploadEditorView.swift */; };
 		67DD2FE30141496DEE6C97BC /* RichTextEditorDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F95F234083157FD3E6CFFC6 /* RichTextEditorDemoApp.swift */; };
+		9ED03EA7E53B6CAB0506B1F0 /* SwiftDataEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9621E5E2BE9C8C54726600D6 /* SwiftDataEditorView.swift */; };
 		AC7CBB0A566895FEAEE2C7D9 /* RichTextEditor in Frameworks */ = {isa = PBXBuildFile; productRef = FF68081E3606AAB4CD05B235 /* RichTextEditor */; };
 		AE1D0F97A26FDC401F20A93C /* ConfigurationPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B72A5BA7A157A36FC6AC7E6 /* ConfigurationPickerView.swift */; };
 		BCAD127642EA24921C0A4D68 /* RichTextCore in Frameworks */ = {isa = PBXBuildFile; productRef = 24299277E68F3C33A8456D1E /* RichTextCore */; };
@@ -21,6 +22,7 @@
 		5E807143175AF711075DD557 /* RichTextEditorDemo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RichTextEditorDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6F95F234083157FD3E6CFFC6 /* RichTextEditorDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichTextEditorDemoApp.swift; sourceTree = "<group>"; };
 		8B72A5BA7A157A36FC6AC7E6 /* ConfigurationPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationPickerView.swift; sourceTree = "<group>"; };
+		9621E5E2BE9C8C54726600D6 /* SwiftDataEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataEditorView.swift; sourceTree = "<group>"; };
 		A8C67783C0975320C48AC007 /* MinimalEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimalEditorView.swift; sourceTree = "<group>"; };
 		EB0B57D83CA3CFC5AEC8305F /* rich-text-cross-platform */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "rich-text-cross-platform"; path = ../..; sourceTree = SOURCE_ROOT; };
 		EC1ADFAB40AF75714ABADD2D /* CustomToolbarEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomToolbarEditorView.swift; sourceTree = "<group>"; };
@@ -72,6 +74,7 @@
 				21282EA5D406401A799CD3EB /* ImageUploadEditorView.swift */,
 				A8C67783C0975320C48AC007 /* MinimalEditorView.swift */,
 				6F95F234083157FD3E6CFFC6 /* RichTextEditorDemoApp.swift */,
+				9621E5E2BE9C8C54726600D6 /* SwiftDataEditorView.swift */,
 			);
 			path = RichTextEditorDemo;
 			sourceTree = "<group>";
@@ -145,6 +148,7 @@
 				566FF6C63054C18EF7E9FEFC /* ImageUploadEditorView.swift in Sources */,
 				E38A24E65388CB9861F5A9CB /* MinimalEditorView.swift in Sources */,
 				67DD2FE30141496DEE6C97BC /* RichTextEditorDemoApp.swift in Sources */,
+				9ED03EA7E53B6CAB0506B1F0 /* SwiftDataEditorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
