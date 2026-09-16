@@ -104,14 +104,15 @@ take a `Notification` (read `.object as? NSTextView` if needed), not the text vi
 `shouldChangeTextIn` takes `replacementString: String?` (nilable, unlike UIKit's non-optional
 `String`).
 
-**Not yet done, tracked below rather than silently assumed:** a pass on real Mac hardware (this
-was verified via a locally-launched, unsigned build automated through the Accessibility API, not
-a human clicking around); the Liquid Glass toolbar's actual visual polish on macOS (functional
-correctness was verified — the toolbar responds and reflects active state correctly — but its
-*appearance* next to Notes-style iOS chrome hasn't been eyeballed side by side); paste-from-another-
-Mac-app hardening (`RichTextEditorNSTextView.paste(_:)` exists and is a straight port of the iOS
-sanitization logic, but wasn't exercised end-to-end with a real rich paste from Notes/Safari the
-way the iOS path was during its own original hands-on pass).
+**Real hardware and hands-on verification — done, 2026-09-16.** The items below were verified
+Simulator-only and via Accessibility-API automation on an unsigned local build as of 2026-09-14;
+Daniel has since installed and run this on his own Mac and iOS hardware directly and confirmed:
+real typing and toolbar formatting; the Liquid Glass toolbar's visual polish, eyeballed live
+on-device next to iOS chrome, not just the functional correctness verified earlier; and
+`RichTextEditorNSTextView.paste(_:)` against a real rich paste from Notes on macOS — the agreed
+formatting subset is stripped and the rest preserved correctly, not just passing its own
+unit-level assumptions. Still open: the same pass on real Vision Pro hardware — see "visionOS
+support" below, which remains Simulator-only.
 
 ## visionOS support, built and verified — 2026-09-15
 
@@ -213,6 +214,8 @@ managers are worth supporting. Tested directly rather than reasoned about:
   tag (a fresh scratch consumer package resolved it to revision `8fb012f`, matching the tagged
   commit exactly, and built both products cleanly). README.md and
   `docs/guides/getting-started-ios.md` now both use `from: "0.3.0"` instead of `branch: "main"`.
+  Superseded 2026-09-15/16: `v0.4.0` tagged, and README.md + both `getting-started-*.md` guides
+  bumped to `from: "0.4.0"` accordingly (were still stuck on `0.3.0` until 2026-09-16).
 - **Other Swift package managers: none recommended.** SPM is Apple's own supported path and the
   one that actually got verified above. CocoaPods is in maintenance mode industry-wide; Carthage
   is effectively inactive. Adding a `.podspec` to a package whose whole premise is "clean modern
@@ -235,6 +238,47 @@ managers are worth supporting. Tested directly rather than reasoned about:
   architecture that isn't working well (see `README.md`'s intro). See "The macOS editor, built and
   verified" above.
 
+## Decided (2026-09-16)
+
+- **Freezing the public API for 1.0.** Daniel's call. Nothing found in this audit blocks it:
+  `web/packages/rich-text-editor` references Quill as a real npm `peerDependency` (`^2.0.2`),
+  dynamically imported at runtime (`await import("quill")` in `QuillHost.tsx`) — never vendored —
+  so there's no embedded-vs-referenced cleanup hiding behind the freeze. The frozen surface is
+  `RichTextEditor`, `RichTextEditorModel`, `RichTextTextView`, `RichTextEditorConfiguration`,
+  `RichTextImageUploading`, `ImageDownscaling`, `Delta`, `ImageStore` (Swift) and `QuillHost`,
+  `configureImageBaseURL`, `Delta` (web). README.md's Contributing section still says "expect the
+  public API to move" — that needs to go once the 1.0 tag actually lands, not before (see
+  `BACKLOG.md`'s "Path to 1.0" section for the release-mechanics checklist this still needs:
+  CHANGELOG, the tag itself, and whether the web package versions in lockstep or independently).
+- **Distribution stays a single `Package.swift`, two products** — reaffirmed for 1.0. The
+  "Open decisions" entry above about a future split (a genuinely separate release cadence per
+  platform) remains true *if* that need ever arises, but it isn't arising now, so it isn't a
+  precondition for 1.0.
+- **XcodeGen stays** as the example app's project-generation tool. No hand-maintained
+  `.xcodeproj` migration planned; the diffability/merge-conflict trade-off that motivated XcodeGen
+  in the first place hasn't changed.
+- **The SwiftUI `TextEditor`-based editor path stays unported.** Confirmed, not just left
+  unrevisited by default — no proven benefit over the shipped `NSTextView`/`UITextView` editors
+  (see `PROVENANCE.md`'s "What was deliberately not ported").
+
+## CI — green as of 2026-09-16
+
+Wired up 2026-09-14, but every run failed — 9/9 red — until today. Root cause: `runs-on: macos-15`
+booted an actual macOS 15.7.9 host against a package whose floor is macOS 26, so `xcodebuild`
+couldn't find a matching destination (`doesn't support My Mac's macOS 15.7.9`) and the built
+macOS test bundle `dlopen`-failed on `GlassEffectContainer`, a macOS-26-only SwiftUI symbol —
+Xcode having the 26 SDK installed doesn't help when the host OS itself is 15. Fixed by moving all
+three macOS jobs to the `macos-26` hosted runner image (now published by `actions/runner-images`);
+there's deliberately no macOS-15 fallback. `xcode-version` is pinned to `"26.6.0"`, confirmed by
+a real all-green run (all four jobs: `swift-test`, `ios-simulator`, `example-app`, `web`) —
+`latest-stable` is gone, not a placeholder anymore. Also fixed in the same pass: the iOS-Simulator-
+destination step's `$SIMULATOR_ID` came back empty in every earlier failed log
+(`xcodebuild -destination "id="` matched nothing) — now fails fast with a clear error instead of
+silently doing nothing, so a future runner-image change can't mask this again.
+`examples/rich-text-editor-demo`'s own build (`xcodegen generate` then `xcodebuild build` for both
+`platform=macOS` and an iOS Simulator destination) already has its own job, now that it's a real,
+generated Xcode project rather than loose source files.
+
 ## Scoped, not yet built
 
 Ordered by what unblocks the most other work.
@@ -253,39 +297,11 @@ Ordered by what unblocks the most other work.
 4. **Automate keeping the two Swift-side fixture copies in sync** (repo-root `fixtures/`, used by
    the web package's tests, and `Tests/RichTextCoreTests/Resources/fixtures`, required by SPM's
    resource-bundling rules) — a script or a pre-commit check, so they can't silently drift.
-5. **Hands-on verification on real hardware**, ported from the fork point's own outstanding
-   items — hanging indent and non-selectable markers under live editing on a real iPhone/iPad/Mac
-   (not just Simulator and an unsigned local Mac build driven by the Accessibility API — see "The
-   macOS editor" above for exactly what that pass did and didn't cover), cross-editor consistency
-   (well, cross-*platform* now: iOS-authored ↔ macOS-read ↔ web-read), full toolbar/list-editing
-   parity. The fork point never finished this pass before extraction; it needs redoing here since
-   this is a different package with a different public API surface, not the same code under a new
-   name.
-6. **CI** — GitHub Actions running `swift test` (cross-platform, `RichTextCore` + the macOS half of
-   `RichTextEditor`), `xcodebuild test -scheme RichTextCrossPlatform-Package -destination
-   'platform=iOS Simulator,…'` (the iOS half of `RichTextEditor`), and `npm test`/
-   `npm run typecheck` for the web package, on every PR. Not yet set up. `examples/rich-text-editor-demo`'s own
-   build (`xcodegen generate` then `xcodebuild build` for both `platform=macOS` and an iOS
-   Simulator destination) is worth a CI job too, now that it's a real, generated Xcode project
-   rather than loose source files.
-7. **CONTRIBUTING.md, issue/PR templates.** Open-source hygiene not yet done.
-
-## Open decisions, not yet made
-
-- **How to distribute this once it's more than one product's worth of platforms** — today's
-  single `Package.swift`/two-products shape (see "One `Package.swift` at the repo root" above)
-  held up fine even through adding the macOS editor; if this ever needs to split (e.g. a
-  genuinely separate release cadence per platform), that's a real decision to make deliberately,
-  not a default to fall into.
-- **Whether the fork point's SwiftUI/`TextEditor`-based editor is worth ever revisiting** —
-  deliberately not ported (see `PROVENANCE.md`), and the calculus hasn't changed now that a real
-  `NSTextView` editor exists for macOS too: it would be a second, structurally worse iOS editor
-  (no real inline images, no real list markers, and the fork point's own code carries visible
-  scars from an unresolved multi-round selection-tracking investigation — see
-  `rich-text-poc/apple/RichTextPOC/RichTextPOC/DocumentEditorView.swift`'s `SegmentTextEditor` if
-  this is ever reconsidered) for no proven benefit over what's already shipped.
-- **Whether to keep XcodeGen as the example app's project-generation tool, or move to a
-  hand-maintained `.xcodeproj`** once the example app's structure stabilizes — XcodeGen keeps
-  `project.yml` diffable and avoids merge conflicts in a binary-ish `.xcodeproj`, at the cost of a
-  build-time dependency (`brew install xcodegen`) for anyone who needs to *regenerate* it (opening
-  and running the checked-in `.xcodeproj` needs nothing extra).
+5. **Cross-platform round-trip consistency**: iOS-authored ↔ macOS-read ↔ web-read, and full
+   toolbar/list-editing parity checked across all three, not just per-platform. (Hands-on hardware
+   verification itself — hanging indent, non-selectable markers, toolbar formatting under live
+   editing on a real iPhone/iPad/Mac — is done; see "Real hardware and hands-on verification"
+   above. Real Vision Pro hardware is still open, same section.) The fork point never finished this
+   specific cross-platform pass before extraction; it needs doing here since this is a different
+   package with a different public API surface, not the same code under a new name.
+6. **CONTRIBUTING.md, issue/PR templates.** Open-source hygiene not yet done.

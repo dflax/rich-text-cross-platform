@@ -70,9 +70,11 @@ backend's implementation" posture as the Swift side.
   and B2 upload client. This project defines the storage *contract* (see `docs/backends/`) rather
   than shipping one backend's implementation of it.
 
-## Known gap carried forward, not introduced here
+## A gap the POC's own PRD named explicitly — since closed here
 
-The editor is iOS/iPadOS only — `UITextView` has no macOS equivalent; `NSTextView` is a related
-but distinct API surface this project has not yet built or tested against. The POC's own PRD
-named this gap explicitly rather than letting a strong iOS result imply a macOS answer nobody
-checked; same posture here. See `README.md`'s Scope section and `docs/ROADMAP.md`.
+At the fork point, the editor was iOS/iPadOS only — `UITextView` has no macOS equivalent, and
+`NSTextView` was a related but distinct API surface the POC had not built or tested against. Its
+own PRD named that gap explicitly rather than letting a strong iOS result imply a macOS answer
+nobody checked. This project closed it: a real `NSTextView`-backed macOS editor was built and
+verified 2026-09-14, and confirmed on real Mac hardware by Daniel — see `docs/ROADMAP.md`'s "The
+macOS editor, built and verified" section for what shipped and the real bugs launching it caught.

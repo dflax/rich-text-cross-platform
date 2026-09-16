@@ -14,7 +14,7 @@ Same as iOS — one `Package.swift`, two products:
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/dflax/rich-text-cross-platform", from: "0.3.0")
+    .package(url: "https://github.com/dflax/rich-text-cross-platform", from: "0.4.0")
 ],
 targets: [
     .target(name: "YourApp", dependencies: ["RichTextCore", "RichTextEditor"])
@@ -22,7 +22,7 @@ targets: [
 ```
 
 Or in Xcode: File → Add Package Dependencies…, paste the repo URL, pick "Up to Next Minor
-Version" starting at `0.3.0`, and link both `RichTextCore` and `RichTextEditor`.
+Version" starting at `0.4.0`, and link both `RichTextCore` and `RichTextEditor`.
 
 **Minimum deployment target: macOS 26** — see `docs/ROADMAP.md`'s Decided section for why this
 isn't being lowered.

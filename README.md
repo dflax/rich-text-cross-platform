@@ -74,11 +74,11 @@ One package, two products — add it once, pick which product(s) you need:
 
 ```swift
 dependencies: [
-    // v0.3.0 is a real, working tag — not 1.0, the public API can still move. `from: "0.3.0"`
-    // resolves to `>=0.3.0, <0.4.0` (SPM's semver rule for 0.x versions treats a minor bump as
+    // v0.4.0 is a real, working tag — not 1.0, the public API can still move. `from: "0.4.0"`
+    // resolves to `>=0.4.0, <0.5.0` (SPM's semver rule for 0.x versions treats a minor bump as
     // a potential breaking change, unlike after 1.0). Verified against the real tagged commit,
     // not assumed.
-    .package(url: "https://github.com/dflax/rich-text-cross-platform", from: "0.3.0")
+    .package(url: "https://github.com/dflax/rich-text-cross-platform", from: "0.4.0")
 ],
 targets: [
     .target(name: "YourApp", dependencies: ["RichTextCore", "RichTextEditor"])
