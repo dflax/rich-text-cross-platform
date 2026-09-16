@@ -4,9 +4,10 @@ A [Quill](https://quilljs.com/) 2.x wrapper enforcing the same small formatting 
 Swift `RichTextEditor` package enforces, reading and writing the same Quill Delta JSON — see
 [`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md).
 
-**Status: real, tested, not yet built for publishing.** This ships as TypeScript source
-(`main`/`types` point at `src/index.ts` directly) — your bundler needs to handle `.ts`/`.tsx`
-itself, since there's no compiled `dist/` yet. See `docs/ROADMAP.md`.
+**Status: real, tested, and built for publishing.** `npm run build` (via `tsup`) produces a real
+`dist/` — an ESM bundle plus `.d.ts` declarations — and `main`/`module`/`types`/`exports` all
+point at it. `react`, `react-dom`, and `quill` stay peer dependencies, not bundled. Not yet
+published to the npm registry itself — see `docs/ROADMAP.md`.
 
 ## What's here
 
@@ -44,17 +45,18 @@ function Editor({ initialDelta, onSave }: { initialDelta: Delta; onSave: (d: Del
 }
 ```
 
-## Testing
+## Building and testing
 
 ```
 npm install
-npm test         # round-trip + vocabulary tests against the shared fixture corpus
+npm run build     # tsup -> dist/index.js, dist/index.d.ts
+npm test          # round-trip + vocabulary tests against the shared fixture corpus
 npm run typecheck
 ```
 
 ## Not yet done (see `docs/ROADMAP.md`)
 
-- A real build step producing a publishable `dist/`.
+- Publishing to the npm registry itself (the build step is done; `npm publish` isn't).
 - Image upload wiring / a sample app showing multiple configurations (the iOS side has this in
   `examples/rich-text-editor-demo/`; the web equivalent doesn't exist yet).
 - Porting the fork point's full round-trip test suite (this package's `test/round-trip.test.ts`

@@ -13,19 +13,21 @@ handling. Quill Delta is a small, well-specified JSON format with the structure 
 needs and none of Markdown's ambiguity; this project's job is a matching pair of first-class
 native editors around it, plus enough backend-agnostic contract that it isn't tied to one stack.
 
-**Status: early, but editing is now real on all four Apple platforms.** The Swift package and
-the web package are both real and tested — 83 cross-platform `RichTextCore` tests, 4 iOS-only and
-6 macOS-only `RichTextEditor` tests (against real, attached `UITextView`/`NSTextView` instances),
-22 web tests proven against the *same* fixture corpus the Swift side uses. The example app builds
-and has been hands-on verified on macOS (real typing, real toolbar formatting, a real `NSTextList`
-bullet marker with correct hanging indent) and on iOS Simulator. visionOS support is real too —
-the separate `examples/visionos-demo` app builds and runs on the visionOS Simulator — but has only
-been checked there, not on real Vision Pro hardware or with a full hands-on editing pass the way
-macOS and iOS have. Not yet done: the web package has no build step for publishing, backend
-adapters beyond a real Postgres schema are guidance rather than shipped code, and CI isn't wired
-up yet. Don't point production traffic at this yet — see
-[`PROVENANCE.md`](PROVENANCE.md) for exactly what's proven versus newly extracted, and
-[`docs/ROADMAP.md`](docs/ROADMAP.md) for the full punch list.
+**Status: early, but editing is now real on all four Apple platforms, hands-on verified on real
+Mac and iOS hardware.** The Swift package and the web package are both real and tested — 83
+cross-platform `RichTextCore` tests, 4 iOS-only and 6 macOS-only `RichTextEditor` tests (against
+real, attached `UITextView`/`NSTextView` instances), 22 web tests proven against the *same*
+fixture corpus the Swift side uses. Beyond the test suite, the example app has been hands-on
+verified on real Mac and iOS hardware (not just Simulator) — real typing, toolbar formatting, list
+markers with correct hanging indent, rich paste from both Notes and Safari on macOS. visionOS
+support is real too — the separate `examples/visionos-demo` app builds and runs on the visionOS
+Simulator — but has only been checked there, not on real Vision Pro hardware. CI runs `swift test`,
+an iOS Simulator suite, the example app's build, and the web package's tests on every push — see
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml). Not yet done: publishing the web package to
+the npm registry (it has a real build step now, `npm run build`, just isn't published), and backend
+adapters beyond a real Postgres schema are guidance rather than shipped code. Don't point
+production traffic at this yet — see [`PROVENANCE.md`](PROVENANCE.md) for exactly what's proven
+versus newly extracted, and [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full punch list.
 
 ## Scope, read carefully
 
@@ -40,8 +42,9 @@ up yet. Don't point production traffic at this yet — see
   in a window ornament instead of docking to the content, matching that platform's own idiom for
   a persistent secondary control surface.
   - Editing on the **web** is not iOS-gated at all — Quill runs anywhere a browser does. The web
-    package (`web/packages/rich-text-editor`) is real and tested; see `docs/ROADMAP.md` for what's
-    left (a build step, a sample app, wider test coverage).
+    package (`web/packages/rich-text-editor`) is real, tested, and built (`npm run build`
+    produces a publishable `dist/`); see `docs/ROADMAP.md` for what's left (a sample app, wider
+    test coverage, and publishing it to the npm registry).
 - **Vocabulary is deliberately small**: bold, italic, underline, strikethrough, links, headers
   (two levels), bulleted/numbered lists, and images with alt text. No tables, no code blocks, no
   arbitrary colors or fonts, no nested lists. This is a feature, not a gap to be filled — see

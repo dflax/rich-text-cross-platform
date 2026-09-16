@@ -49,8 +49,12 @@ continues. Update this as items move between sections; don't let it silently go 
   B2-specific naming, a configurable image base URL instead of a hardcoded bucket). 22 tests
   green (`npm test`), including byte-identical round-trip and vocabulary-membership checks
   against the *same* fixture corpus the Swift package uses — the actual cross-platform-
-  consistency proof, not just a claim. `npx tsc --noEmit` clean. Ships as TypeScript source
-  (no build step yet) — see below.
+  consistency proof, not just a claim. `npx tsc --noEmit` clean. **Real build step added
+  2026-09-16**: `tsup` (`npm run build`) produces an ESM `dist/index.js` + `dist/index.d.ts`,
+  verified by actually importing the built bundle in Node and checking every expected export is
+  present, not just that `tsup` exited 0. `react`/`react-dom`/`quill` stay externalized
+  peer dependencies, not bundled. `main`/`module`/`types`/`exports` all point at `dist/` now.
+  Not yet published to the npm registry — see below.
 - **`docs/backends/mysql.md`, `mongodb.md`, `firebase.md`, `cloudkit.md`, `supabase.md`,
   `powersync.md`** — written guidance mapping the storage contract (`docs/backends/README.md`)
   onto each store. `cloudkit.md` (added 2026-09-15) is verified by direct compilation against the
@@ -296,21 +300,19 @@ Ordered by what unblocks the most other work.
    (`configureImageBaseURL`, a demo `QuillHost` usage, a custom-toolbar-equivalent — Quill's own
    toolbar module config already *is* the "custom toolbar" story, so this is more "show it" than
    "build new capability").
-2. **A build step for the web package** producing a publishable `dist/` (tsup or plain `tsc`) —
-   it currently ships as source, `main`/`types` pointing straight at `src/index.ts`.
-3. **Port the fork point's fuller round-trip test suite** to the web package —
+2. **Port the fork point's fuller round-trip test suite** to the web package —
    `test/round-trip.test.ts` proves byte-identity and vocabulary membership across the whole
    corpus (22 tests), which is the actual cross-platform-consistency proof, but doesn't yet cover
    every coalescing/idempotence/image-edge-case assertion `RichTextCoreTests` covers on the Swift
    side. See that package's own `README.md`.
-4. **Automate keeping the two Swift-side fixture copies in sync** (repo-root `fixtures/`, used by
+3. **Automate keeping the two Swift-side fixture copies in sync** (repo-root `fixtures/`, used by
    the web package's tests, and `Tests/RichTextCoreTests/Resources/fixtures`, required by SPM's
    resource-bundling rules) — a script or a pre-commit check, so they can't silently drift.
-5. **Cross-platform round-trip consistency**: iOS-authored ↔ macOS-read ↔ web-read, and full
+4. **Cross-platform round-trip consistency**: iOS-authored ↔ macOS-read ↔ web-read, and full
    toolbar/list-editing parity checked across all three, not just per-platform. (Hands-on hardware
    verification itself — hanging indent, non-selectable markers, toolbar formatting under live
    editing on a real iPhone/iPad/Mac — is done; see "Real hardware and hands-on verification"
    above. Real Vision Pro hardware is still open, same section.) The fork point never finished this
    specific cross-platform pass before extraction; it needs doing here since this is a different
    package with a different public API surface, not the same code under a new name.
-6. **CONTRIBUTING.md, issue/PR templates.** Open-source hygiene not yet done.
+5. **CONTRIBUTING.md, issue/PR templates.** Open-source hygiene not yet done.
