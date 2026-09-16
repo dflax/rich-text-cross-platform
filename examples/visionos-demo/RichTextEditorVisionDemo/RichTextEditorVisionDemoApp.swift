@@ -5,7 +5,7 @@ struct RichTextEditorVisionDemoApp: App {
     @State private var library = DocumentLibrary()
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "gallery") {
             DocumentGalleryView()
                 .environment(library)
         }
@@ -25,5 +25,18 @@ struct RichTextEditorVisionDemoApp: App {
             }
         }
         .defaultSize(width: 720, height: 900)
+        // Without this, a newly opened document window has no relationship to the gallery
+        // window it was opened from — the system picks a default position that can land
+        // directly behind or fully overlapping the window you're already looking at, which
+        // reads as "nothing happened" when you tap a document. Placing it beside the gallery
+        // window (when the gallery is actually open) makes every new document window land
+        // somewhere you'll actually see it.
+        .defaultWindowPlacement { _, context in
+            if let gallery = context.windows.first(where: { $0.id == "gallery" }) {
+                WindowPlacement(.trailing(gallery))
+            } else {
+                WindowPlacement()
+            }
+        }
     }
 }

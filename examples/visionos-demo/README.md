@@ -55,6 +55,14 @@ Both `WindowGroup`s share one `DocumentLibrary` instance, injected via `.environ
 `Binding<Delta>` that reads and writes straight into the shared list, so the gallery's preview
 text and a document's own open window stay consistent without any extra syncing code.
 
+**On window placement:** the document `WindowGroup` has a `.defaultWindowPlacement` that opens
+each new document window `.trailing` the gallery window. Without that, visionOS picks a default
+position for a newly opened window with no relationship to the window you opened it from — which
+can land directly behind or fully overlapping the window you're already looking at, so tapping a
+document can look like nothing happened. If that ever comes back (e.g. you remove the gallery
+window's explicit `id: "gallery"`, which is what `.defaultWindowPlacement` looks up to find it),
+try the Simulator's recenter control first before assuming the tap itself didn't register.
+
 ## Changing the project
 
 If you add, remove, or rename a source file, or edit `project.yml`:
