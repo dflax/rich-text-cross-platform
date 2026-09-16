@@ -1,1 +1,0 @@
-{"ops":[{"insert":"This paragraph is one single run. It has several sentences, punctuation, and a stray number 42, all sharing identical attributes. It must survive encode as exactly one op, not several.\n"}]}

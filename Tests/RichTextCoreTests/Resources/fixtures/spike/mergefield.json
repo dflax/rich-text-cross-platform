@@ -1,1 +1,0 @@
-{"ops":[{"insert":"Dear "},{"insert":{"mergeField":"viewer.firstName"}},{"insert":",\nYour pickup time is unchanged.\n"}]}

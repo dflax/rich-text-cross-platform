@@ -39,10 +39,13 @@ continues. Update this as items move between sections; don't let it silently go 
   composed cleanly: the trap this note used to warn about (a platform-gated type's public API
   exposing an ungated dependency) never actually got hit building the macOS half, because that
   lesson was already applied.
-- **Fixture corpus** — a shared copy at the repo root (`fixtures/`), the same one both
-  `RichTextCore`'s own resource-bundled copy (`Tests/RichTextCoreTests/Resources/fixtures`,
-  required by SPM's resource-bundling rules) and the web package's tests are proven against. The
-  two Swift-side copies need to be kept in sync by hand until that's automated (see below).
+- **Fixture corpus** — one copy at the repo root (`fixtures/`), read directly by both
+  `RichTextCore`'s resource-bundled test target and the web package's tests.
+  `Tests/RichTextCoreTests/Resources/fixtures` (SPM requires a test target's resources live under
+  its own test directory — see `PROVENANCE.md`) is a **symlink** to the repo-root copy, not a
+  second copy, as of 2026-09-16 — there's no drift to keep in sync anymore, by construction rather
+  than by a check. Verified: `rm -rf .build && swift test` after the switch — all 83 tests still
+  green, confirming SPM's resource-copy step follows the symlink correctly.
 - **Postgres backend** — see `backends/postgres/`.
 - **Web package** (`web/packages/rich-text-editor`) — `delta.ts`/`vocabulary.ts`/`quill-setup.ts`/
   `image-key.ts`/`QuillHost.tsx` ported from the fork point's `web/` app and genericized (no more
@@ -309,10 +312,7 @@ Ordered by what unblocks the most other work.
    corpus (22 tests), which is the actual cross-platform-consistency proof, but doesn't yet cover
    every coalescing/idempotence/image-edge-case assertion `RichTextCoreTests` covers on the Swift
    side. See that package's own `README.md`.
-3. **Automate keeping the two Swift-side fixture copies in sync** (repo-root `fixtures/`, used by
-   the web package's tests, and `Tests/RichTextCoreTests/Resources/fixtures`, required by SPM's
-   resource-bundling rules) — a script or a pre-commit check, so they can't silently drift.
-4. **Cross-platform round-trip consistency**: iOS-authored ↔ macOS-read ↔ web-read, and full
+3. **Cross-platform round-trip consistency**: iOS-authored ↔ macOS-read ↔ web-read, and full
    toolbar/list-editing parity checked across all three, not just per-platform. (Hands-on hardware
    verification itself — hanging indent, non-selectable markers, toolbar formatting under live
    editing on a real iPhone/iPad/Mac — is done; see "Real hardware and hands-on verification"

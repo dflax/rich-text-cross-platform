@@ -66,6 +66,10 @@ and a run like that would be silently dropped on encode otherwise. Enforced by
 
 ## Adding a fixture
 
+`Tests/RichTextCoreTests/Resources/fixtures` (SPM requires the test target's resources to live
+under its own test directory) is a symlink to this directory, not a separate copy — there's
+nothing to keep in sync by hand anymore.
+
 Author it by hand in canonical form, then run `swift test`. If the byte form is off,
 `fixturesAreCanonicalOnDisk` prints both the on-disk and re-encoded strings; if the ops are
 not merged, `fixturesAreCoalesced` prints the coalesced version. Either way the fix is
