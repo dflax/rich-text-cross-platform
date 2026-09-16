@@ -30,13 +30,13 @@ public struct RichTextEditorConfiguration: Sendable {
     /// existing design system, or to support an OS version below this package's iOS 26 / macOS 26
     /// minimum for the rest of your app while still editing rich text on newer devices. Receives
     /// the same `RichTextEditorModel` the default toolbar drives; see `docs/guides/custom-toolbar.md`.
-    public var toolbar: (@MainActor (RichTextEditorModel) -> AnyView)?
+    public var toolbar: (@MainActor @Sendable (RichTextEditorModel) -> AnyView)?
 
     public init(
         allowsImages: Bool = true,
         allowsLinks: Bool = true,
         imageDownscaling: ImageDownscaling = .default,
-        toolbar: (@MainActor (RichTextEditorModel) -> AnyView)? = nil
+        toolbar: (@MainActor @Sendable (RichTextEditorModel) -> AnyView)? = nil
     ) {
         self.allowsImages = allowsImages
         self.allowsLinks = allowsLinks

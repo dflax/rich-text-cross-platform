@@ -72,6 +72,12 @@ continues. Update this as items move between sections; don't let it silently go 
   PowerSync's actual Swift SPM package and reading its shipped source/demo code directly.
   `docs/backends/CATALOG.md` covers the fuller provider landscape beyond these guides.
 - **License, minimum OS, and the macOS editor commitment** — see "Decided" below.
+- **`RichTextEditorConfiguration.toolbar`'s `@Sendable` fix** — the closure type is now
+  `@MainActor @Sendable (RichTextEditorModel) -> AnyView`, not just `@MainActor`. Verified via
+  `swift build -Xswiftc -strict-concurrency=complete` after `rm -rf .build` (zero warnings, where
+  it previously warned), `swift test` (83 tests green), and rebuilding
+  `examples/rich-text-editor-demo` for macOS — the one real call site that constructs this closure
+  (`CustomToolbarEditorView.swift`) still compiles clean.
 - **CONTRIBUTING.md, issue templates (bug report, feature request), and a PR template** — added
   2026-09-16. The PR template's checklist encodes real project-specific lessons rather than a
   generic list: verifying both sides of an `#if canImport` gate, accounting for the 1.0 API
@@ -150,7 +156,8 @@ scrollable content. See `docs/ARCHITECTURE.md`'s new visionOS section for the te
 `xcrun --sdk xrsimulator swiftc` against both changed files (and `RichTextCore`, to rule out any
 indirect breakage) targeting `arm64-apple-xros26.0-simulator` typechecks clean — one pre-existing
 `Sendable`-closure warning on `RichTextEditorConfiguration.toolbar`, unrelated to this change and
-present on every platform, not a new one. `swift build`/`swift test` from the repo root still pass
+present on every platform, not a new one (fixed 2026-09-16 — see "Done and verified" above).
+`swift build`/`swift test` from the repo root still pass
 on macOS after both source changes (83 `RichTextCore` tests + 6 macOS `RichTextEditor` tests,
 green).
 
