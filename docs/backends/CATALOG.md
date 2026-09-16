@@ -129,9 +129,15 @@ as a group because "which BaaS platform" is often the real decision a team is ma
 underlying database as a secondary detail.
 
 - **Firebase**, **Supabase** — see above.
-- **Appwrite** — self-hostable, Postgres-backed as of its newer versions (MariaDB in older ones —
-  verify which your deployment runs). Appwrite's own Storage service covers the image side of the
-  contract directly.
+- **Appwrite** — self-hostable. Verified against Appwrite's own docs/blog 2026-09-16, not assumed:
+  Appwrite 2.0 provisions Postgres by default for new self-hosted installs, with MariaDB and
+  MongoDB still fully supported as install-time choices (a real three-way pick, not a legacy
+  fallback) — new relational, schemaless, and vector data all sit behind the same permissions,
+  queries, and realtime API regardless of which is chosen. An instance upgraded to 2.0 keeps
+  whatever database it was originally installed with (MariaDB was the default before 1.9.0), so
+  this has already changed once — re-verify which your deployment actually runs before acting on
+  this entry rather than trusting this note evergreen. Appwrite's own Storage service covers the
+  image side of the contract directly.
 - **PocketBase** — a single self-contained binary, SQLite-backed, with a built-in admin UI and
   realtime subscriptions. Notable for how little there is to operate — a real option for a small
   or early-stage host app that wants "a backend" without provisioning separate infrastructure.
