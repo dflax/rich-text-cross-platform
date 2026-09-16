@@ -86,8 +86,10 @@ is a product decision, not a technical one, and shouldn't be made silently as a 
 3. The same hands-on verification pass macOS just got (see `docs/ROADMAP.md`): launch the example
    app on the visionOS Simulator (already installed and available in this environment —
    `xcrun simctl list devices available` shows a visionOS 27.0 "Apple Vision Pro" device), type
-   into it, exercise the toolbar. Real hardware (an actual Vision Pro) is the next step beyond
-   that, same as the "not yet done" caveat already recorded for macOS.
+   into it, exercise the toolbar. Real Vision Pro hardware is a deliberate non-goal for this
+   project (Daniel's call, 2026-09-16 — no Vision Pro hardware access, and none planned), not a
+   "not yet done" gap the way it briefly was recorded here — see `docs/ROADMAP.md`'s Decided
+   section.
 4. Update `README.md`'s Scope section and `docs/ARCHITECTURE.md` once real, matching the pattern
    already followed for macOS — don't leave a stale "iOS, iPadOS, macOS" framing once this lands.
 

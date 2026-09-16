@@ -18,10 +18,11 @@ Mac and iOS hardware.** The Swift package and the web package are both real and 
 cross-platform `RichTextCore` tests, 4 iOS-only and 6 macOS-only `RichTextEditor` tests (against
 real, attached `UITextView`/`NSTextView` instances), 22 web tests proven against the *same*
 fixture corpus the Swift side uses. Beyond the test suite, the example app has been hands-on
-verified on real Mac and iOS hardware (not just Simulator) — real typing, toolbar formatting, list
-markers with correct hanging indent, rich paste from both Notes and Safari on macOS. visionOS
-support is real too — the separate `examples/visionos-demo` app builds and runs on the visionOS
-Simulator — but has only been checked there, not on real Vision Pro hardware. CI runs `swift test`,
+verified on real Mac and iOS hardware (not just Simulator) — real typing, toolbar formatting,
+multi-line/multi-paragraph list editing, list markers with correct hanging indent, rich paste from
+both Notes and Safari on macOS. visionOS support is real too — the separate
+`examples/visionos-demo` app builds and runs on the visionOS Simulator; real Vision Pro hardware
+is a deliberate non-goal for this project rather than a pending gap. CI runs `swift test`,
 an iOS Simulator suite, the example app's build, and the web package's tests on every push — see
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Not yet done: publishing the web package to
 the npm registry (it has a real build step now, `npm run build`, just isn't published), and backend

@@ -153,7 +153,9 @@ The one thing that doesn't carry over unmodified is `RichTextFormatBar`'s chrome
 Both changes were verified by direct compilation against the real visionOS SDK, and
 `examples/visionos-demo` builds and runs (unsigned, in the visionOS Simulator) on top of them —
 see that example's own README for what it demonstrates. Not yet done: a hands-on typing/formatting
-pass the way macOS got (see "The macOS editor" above), and any pass on real Vision Pro hardware.
+pass on the visionOS Simulator, the way macOS got on real hardware (see "The macOS editor" above).
+Real Vision Pro hardware itself is a deliberate non-goal for this project, not a pending gap — see
+`docs/ROADMAP.md`'s Decided section.
 
 ## One document, one mutable copy
 

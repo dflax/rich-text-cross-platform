@@ -137,14 +137,18 @@ take a `Notification` (read `.object as? NSTextView` if needed), not the text vi
 
 **Real hardware and hands-on verification — done, 2026-09-16.** The items below were verified
 Simulator-only and via Accessibility-API automation on an unsigned local build as of 2026-09-14;
-Daniel has since installed and run this on his own Mac and iOS hardware directly and confirmed:
-real typing and toolbar formatting; the Liquid Glass toolbar's visual polish, eyeballed live
-on-device next to iOS chrome, not just the functional correctness verified earlier; and
-`RichTextEditorNSTextView.paste(_:)` against a real rich paste from both Notes and Safari on
-macOS — the same two apps the iOS paste-hardening tests were originally validated against — the
-agreed formatting subset is stripped and the rest preserved correctly, not just passing its own
-unit-level assumptions. Still open: the same pass on real Vision Pro hardware — see "visionOS
-support" below, which remains Simulator-only.
+Daniel has since installed and run this on his own Mac and iOS hardware directly, using his own
+multiplatform test app, and confirmed: real typing and toolbar formatting; multi-line,
+multi-paragraph bullet/numbered-list toggling under live typing on macOS, matching iOS behavior
+(not just the automated `NSListReconciliationTests` coverage of the same logic); the Liquid Glass
+toolbar's visual polish, eyeballed live on-device next to iOS chrome, not just the functional
+correctness verified earlier; and `RichTextEditorNSTextView.paste(_:)` against a real rich paste
+from both Notes and Safari on macOS — the same two apps the iOS paste-hardening tests were
+originally validated against — the agreed formatting subset is stripped and the rest preserved
+correctly, not just passing its own unit-level assumptions. Also: no issues observed with
+`RichTextEditorNSTextView`'s window-attachment-time `makeFirstResponder(self)` call grabbing focus
+too aggressively, the theoretical edge case previously flagged as untested — real usage across
+this pass didn't hit it.
 
 ## visionOS support, built and verified — 2026-09-15
 
@@ -187,12 +191,12 @@ CODE_SIGNING_ALLOWED=NO` builds clean, and the built app was installed and launc
 Simulator (visionOS 27.0) without crashing — the gallery window rendered correctly with its
 document list. See `examples/visionos-demo/README.md`.
 
-**Not yet done, tracked here rather than silently assumed:** any pass on real Vision Pro hardware
-— everything above is Simulator-only, same caveat the macOS editor still carries for real Mac
-hardware. No hands-on typing/formatting/toolbar-interaction pass was done either (the Simulator
-verification above confirmed the app launches and renders, not that editing and the ornament
-toolbar behave correctly under real gaze/pinch input) — the macOS editor's own hands-on pass (see
-above) is the bar this hasn't cleared yet.
+**Real Vision Pro hardware: a deliberate non-goal, not a gap — Daniel's call, 2026-09-16.** No
+Vision Pro hardware access, and none planned for this project's purposes. Everything above stays
+Simulator-verified only: the app launches and renders correctly on the visionOS Simulator, but no
+hands-on typing/formatting/toolbar-interaction pass under real gaze/pinch input has been done or
+is planned. This is a permanent, accepted boundary on visionOS support's verification level, not
+an open item blocking anything — see "Decided" above.
 
 ## The example app's Xcode project — built and verified 2026-09-14
 
@@ -280,9 +284,14 @@ managers are worth supporting. Tested directly rather than reasoned about:
   `RichTextEditor`, `RichTextEditorModel`, `RichTextTextView`, `RichTextEditorConfiguration`,
   `RichTextImageUploading`, `ImageDownscaling`, `Delta`, `ImageStore` (Swift) and `QuillHost`,
   `configureImageBaseURL`, `Delta` (web). README.md's Contributing section still says "expect the
-  public API to move" — that needs to go once the 1.0 tag actually lands, not before (see
-  `BACKLOG.md`'s "Path to 1.0" section for the release-mechanics checklist this still needs:
-  CHANGELOG, the tag itself, and whether the web package versions in lockstep or independently).
+  public API to move" — that stays as-is **on purpose** until the actual 1.0 tag lands (Daniel's
+  explicit call, 2026-09-16: wait until the npm-publish situation is sorted and 1.0.0 is actually
+  happening before touching that doc, not before).
+- **Web and Swift go to 1.0.0 together — Daniel's call, 2026-09-16.** Not independent versioning;
+  the web package's own `package.json` (currently `0.1.0`) bumps to `1.0.0` in lockstep with the
+  Swift package's git tag. Daniel is building a web sample app tonight
+  (`web sample app mirroring the iOS one's configuration variants`, "Scoped, not yet built" #1
+  below) to reach parity with the existing Swift-side test app before that tag.
 - **Distribution stays a single `Package.swift`, two products** — reaffirmed for 1.0. The
   "Open decisions" entry above about a future split (a genuinely separate release cadence per
   platform) remains true *if* that need ever arises, but it isn't arising now, so it isn't a
@@ -301,6 +310,15 @@ managers are worth supporting. Tested directly rather than reasoned about:
   different editors (`UITextView` on iOS/iPadOS/visionOS, `NSTextView` on macOS) sharing type
   names via `#if canImport`, not just an equally-valid alternative to it. Until then, nothing
   changes: this is a watch condition, not a task with a deadline.
+- **Real Vision Pro hardware testing: a permanent non-goal, not a gap — Daniel's call,
+  2026-09-16.** "I don't own that. I'm not going to buy one for this purpose." visionOS support
+  stays verified on Simulator only, indefinitely — not a blocker for 1.0 or anything else, and not
+  something to keep re-flagging as "not yet done." See "visionOS support" above.
+- **macOS hands-on verification: closed out, 2026-09-16.** Using his own multiplatform test app on
+  real Mac and iOS hardware, Daniel confirmed multi-line/multi-paragraph list toggling under live
+  typing (matching iOS), and found no issues with `RichTextEditorNSTextView`'s
+  window-attachment-time focus grab — the two remaining items under "macOS editor follow-ups"
+  precision-tracked in earlier working notes. See "Real hardware and hands-on verification" above.
 
 ## CI — green as of 2026-09-16
 
@@ -337,6 +355,7 @@ Ordered by what unblocks the most other work.
    toolbar/list-editing parity checked across all three, not just per-platform. (Hands-on hardware
    verification itself — hanging indent, non-selectable markers, toolbar formatting under live
    editing on a real iPhone/iPad/Mac — is done; see "Real hardware and hands-on verification"
-   above. Real Vision Pro hardware is still open, same section.) The fork point never finished this
-   specific cross-platform pass before extraction; it needs doing here since this is a different
-   package with a different public API surface, not the same code under a new name.
+   above. Real Vision Pro hardware is a deliberate non-goal, not part of this — see "Decided"
+   above.) The fork point never finished this specific cross-platform pass before extraction; it
+   needs doing here since this is a different package with a different public API surface, not the
+   same code under a new name.
