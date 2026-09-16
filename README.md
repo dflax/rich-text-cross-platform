@@ -171,8 +171,11 @@ covers the same contract for MySQL, MongoDB, and Firebase.
 - [`docs/guides/`](docs/guides/) — integration guides
 - [`docs/backends/`](docs/backends/) — the storage contract and per-database guidance
 - [`PROVENANCE.md`](PROVENANCE.md) — where this code came from and what changed on the way here
+- [`CHANGELOG.md`](CHANGELOG.md) — what changed in each release
 
 ## Contributing
 
-Not formally set up yet (no `CONTRIBUTING.md`, no issue templates — see `docs/ROADMAP.md`), but
-issues and PRs are welcome. This is early: expect the public API to move.
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to build, test, and submit a change, plus the
+issue and PR templates under [`.github/`](.github/). The public API is being frozen for a 1.0
+release (see `docs/ROADMAP.md`'s Decided section for the exact surface), but that tag hasn't
+landed yet — until it does, treat the API as still capable of moving.

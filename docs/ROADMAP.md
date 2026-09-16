@@ -69,6 +69,10 @@ continues. Update this as items move between sections; don't let it silently go 
   PowerSync's actual Swift SPM package and reading its shipped source/demo code directly.
   `docs/backends/CATALOG.md` covers the fuller provider landscape beyond these guides.
 - **License, minimum OS, and the macOS editor commitment** — see "Decided" below.
+- **CONTRIBUTING.md, issue templates (bug report, feature request), and a PR template** — added
+  2026-09-16. The PR template's checklist encodes real project-specific lessons rather than a
+  generic list: verifying both sides of an `#if canImport` gate, accounting for the 1.0 API
+  freeze, and keeping `docs/ROADMAP.md` updated in the same PR that makes it stale.
 - **Scrubbed internal proof-point references** (`P1`–`P10`, `U1`–`U7`, "Build Order step N", and
   stale pre-extraction type names like `UIKitEditorModel`/`DeltaCodec`/`SegmentedDocument`) out of
   every doc comment in `Sources/`, `Tests/`, and `web/packages/rich-text-editor/src/`. These
@@ -315,4 +319,3 @@ Ordered by what unblocks the most other work.
    above. Real Vision Pro hardware is still open, same section.) The fork point never finished this
    specific cross-platform pass before extraction; it needs doing here since this is a different
    package with a different public API surface, not the same code under a new name.
-5. **CONTRIBUTING.md, issue/PR templates.** Open-source hygiene not yet done.
