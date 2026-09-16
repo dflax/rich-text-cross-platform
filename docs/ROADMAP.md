@@ -39,13 +39,21 @@ continues. Update this as items move between sections; don't let it silently go 
   composed cleanly: the trap this note used to warn about (a platform-gated type's public API
   exposing an ungated dependency) never actually got hit building the macOS half, because that
   lesson was already applied.
-- **Fixture corpus** — one copy at the repo root (`fixtures/`), read directly by both
-  `RichTextCore`'s resource-bundled test target and the web package's tests.
-  `Tests/RichTextCoreTests/Resources/fixtures` (SPM requires a test target's resources live under
-  its own test directory — see `PROVENANCE.md`) is a **symlink** to the repo-root copy, not a
-  second copy, as of 2026-09-16 — there's no drift to keep in sync anymore, by construction rather
-  than by a check. Verified: `rm -rf .build && swift test` after the switch — all 83 tests still
-  green, confirming SPM's resource-copy step follows the symlink correctly.
+- **Fixture corpus** — a shared copy at the repo root (`fixtures/`), the same one both
+  `RichTextCore`'s own resource-bundled copy (`Tests/RichTextCoreTests/Resources/fixtures`,
+  required by SPM's resource-bundling rules) and the web package's tests are proven against.
+  **A symlink was tried 2026-09-16 and reverted the same day**: it passed locally (`rm -rf .build
+  && swift test`, 83 green) but failed on a genuinely fresh CI checkout — SPM's resource-copy step
+  copied the symlink itself rather than dereferencing it, so the relative target
+  (`../../../fixtures`) no longer pointed anywhere real once relocated inside the built test
+  bundle, and every fixture lookup failed with `.notFound`. Reverted to two real copies plus an
+  actual drift check instead: `.github/workflows/ci.yml`'s `swift-test` job now runs
+  `diff -rq fixtures Tests/RichTextCoreTests/Resources/fixtures` before `swift test`, so the two
+  can't silently diverge even though they're no longer prevented from diverging by construction.
+  **Lesson for next time:** "it passed locally" is not evidence a symlinked SPM resource works —
+  a local working tree already has both paths resolved on disk in a way a fresh CI checkout's
+  build step does not necessarily preserve; verify a resource-bundling change against a truly
+  clean checkout (or in CI itself) before trusting a local green run.
 - **Postgres backend** — see `backends/postgres/`.
 - **Web package** (`web/packages/rich-text-editor`) — `delta.ts`/`vocabulary.ts`/`quill-setup.ts`/
   `image-key.ts`/`QuillHost.tsx` ported from the fork point's `web/` app and genericized (no more
