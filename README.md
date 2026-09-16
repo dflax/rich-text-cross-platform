@@ -13,26 +13,32 @@ handling. Quill Delta is a small, well-specified JSON format with the structure 
 needs and none of Markdown's ambiguity; this project's job is a matching pair of first-class
 native editors around it, plus enough backend-agnostic contract that it isn't tied to one stack.
 
-**Status: early, but editing is now real on all three Apple platforms.** The Swift package and
+**Status: early, but editing is now real on all four Apple platforms.** The Swift package and
 the web package are both real and tested — 83 cross-platform `RichTextCore` tests, 4 iOS-only and
 6 macOS-only `RichTextEditor` tests (against real, attached `UITextView`/`NSTextView` instances),
 22 web tests proven against the *same* fixture corpus the Swift side uses. The example app builds
 and has been hands-on verified on macOS (real typing, real toolbar formatting, a real `NSTextList`
-bullet marker with correct hanging indent) and on iOS Simulator. Not yet done: the web package has
-no build step for publishing, backend adapters beyond a real Postgres schema are guidance rather
-than shipped code, and CI isn't wired up yet. Don't point production traffic at this yet — see
+bullet marker with correct hanging indent) and on iOS Simulator. visionOS support is real too —
+the separate `examples/visionos-demo` app builds and runs on the visionOS Simulator — but has only
+been checked there, not on real Vision Pro hardware or with a full hands-on editing pass the way
+macOS and iOS have. Not yet done: the web package has no build step for publishing, backend
+adapters beyond a real Postgres schema are guidance rather than shipped code, and CI isn't wired
+up yet. Don't point production traffic at this yet — see
 [`PROVENANCE.md`](PROVENANCE.md) for exactly what's proven versus newly extracted, and
 [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full punch list.
 
 ## Scope, read carefully
 
 - **Reading** a document (rendering a `Delta` read-only) is cross-platform today: iOS, iPadOS,
-  and macOS via SwiftUI, plus the web.
-- **Editing** a document natively works on **iOS, iPadOS, and macOS.** One public API
+  macOS, and visionOS via SwiftUI, plus the web.
+- **Editing** a document natively works on **iOS, iPadOS, macOS, and visionOS.** One public API
   (`RichTextEditor`, `RichTextEditorModel`, `RichTextTextView` — the same type names on every
-  platform) backed by `UITextView` on iOS/iPadOS and `NSTextView` on macOS, both on TextKit 2, for
-  real hanging indent and non-selectable list markers — the two things a naive
-  `AttributedString`-based approach cannot do (see `docs/ARCHITECTURE.md`).
+  platform) backed by `UITextView` on iOS/iPadOS/visionOS (visionOS shares UIKit with iOS, so this
+  is the same implementation, unmodified) and `NSTextView` on macOS, both on TextKit 2, for real
+  hanging indent and non-selectable list markers — the two things a naive `AttributedString`-based
+  approach cannot do (see `docs/ARCHITECTURE.md`). On visionOS, the default toolbar places itself
+  in a window ornament instead of docking to the content, matching that platform's own idiom for
+  a persistent secondary control surface.
   - Editing on the **web** is not iOS-gated at all — Quill runs anywhere a browser does. The web
     package (`web/packages/rich-text-editor`) is real and tested; see `docs/ROADMAP.md` for what's
     left (a build step, a sample app, wider test coverage).
@@ -47,8 +53,9 @@ than shipped code, and CI isn't wired up yet. Don't point production traffic at 
 ```
 Package.swift  One Swift package, two products: RichTextCore (Delta model, codec, vocabulary,
                image cache, sync reconciliation) and RichTextEditor (the editor + its SwiftUI
-               wrapper — UITextView-backed on iOS/iPadOS, NSTextView-backed on macOS, same
-               public type names on both platforms via mutually-exclusive `#if canImport` files)
+               wrapper — UITextView-backed on iOS/iPadOS/visionOS, NSTextView-backed on macOS,
+               same public type names on every platform via mutually-exclusive
+               `#if canImport`/`#if os` files)
 Sources/       RichTextCore/, RichTextEditor/ — see above
 Tests/         RichTextCoreTests/, RichTextEditorTests/ (iOS- and macOS-specific suites, each
                gated to the platform they exercise)
@@ -57,7 +64,8 @@ fixtures/      The shared Delta corpus both platforms' tests are proven against
 backends/      A real Postgres schema/migration; adapter guidance for other stores lives in docs/backends/
 docs/          Architecture, integration guides, backend contract + per-store guidance, roadmap
 examples/      A multiplatform (iOS/iPadOS/macOS) sample app, showing different configuration
-               options — see examples/ios-basic/README.md
+               options (examples/rich-text-editor-demo/README.md), plus a separate visionOS
+               sample app demonstrating multi-window editing (examples/visionos-demo/README.md)
 ```
 
 ## Quick start — Swift
@@ -91,8 +99,10 @@ struct NoteEditor: View {
 }
 ```
 
-See [`docs/guides/getting-started-ios.md`](docs/guides/getting-started-ios.md) for a complete
-walkthrough including image upload wiring, and [`examples/`](examples/) for full sample apps.
+See [`docs/guides/getting-started-ios.md`](docs/guides/getting-started-ios.md) (iOS/iPadOS) or
+[`docs/guides/getting-started-macos.md`](docs/guides/getting-started-macos.md) (macOS) for a
+complete walkthrough including image upload wiring, and [`examples/`](examples/) for full sample
+apps.
 
 ## Quick start — web
 

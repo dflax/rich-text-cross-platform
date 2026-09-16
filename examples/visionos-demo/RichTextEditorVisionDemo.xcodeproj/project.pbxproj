@@ -1,0 +1,363 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2D3274E3C2EB16FB6119CFB0 /* RichTextCore in Frameworks */ = {isa = PBXBuildFile; productRef = 0C733E4E8BC0FB2BB35A7A69 /* RichTextCore */; };
+		5AB69B339624260F1381547D /* DocumentWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 535664DBC99FB6A5E8BC7E6F /* DocumentWindowView.swift */; };
+		5E8F87EFAB5D535BFD82D1BC /* DocumentLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = F969C04DA91038677928D1FA /* DocumentLibrary.swift */; };
+		6B7EFB06E81AE970067A4CBC /* Document.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B09A48BA8065EF756740F2C /* Document.swift */; };
+		76F785AFA845FC0E444739E2 /* DocumentGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77F3FB6D578B02B900550FA6 /* DocumentGalleryView.swift */; };
+		AC92AB76E4B07D5F3F54CD9C /* RichTextEditorVisionDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19CD32B3114DA13D666C9D1F /* RichTextEditorVisionDemoApp.swift */; };
+		C188C208CD290CEE6C3B9AE6 /* RichTextEditor in Frameworks */ = {isa = PBXBuildFile; productRef = D3BFDBCF60064DD5115E4727 /* RichTextEditor */; };
+		D4DCA1A7B480E584983FA998 /* DemoServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2270B29216F9985179C528 /* DemoServices.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0C2270B29216F9985179C528 /* DemoServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoServices.swift; sourceTree = "<group>"; };
+		19CD32B3114DA13D666C9D1F /* RichTextEditorVisionDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichTextEditorVisionDemoApp.swift; sourceTree = "<group>"; };
+		2B09A48BA8065EF756740F2C /* Document.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Document.swift; sourceTree = "<group>"; };
+		535664DBC99FB6A5E8BC7E6F /* DocumentWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentWindowView.swift; sourceTree = "<group>"; };
+		764408B9B6D9FD96BD335949 /* RichTextEditorVisionDemo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RichTextEditorVisionDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		77F3FB6D578B02B900550FA6 /* DocumentGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentGalleryView.swift; sourceTree = "<group>"; };
+		B03B6B131E7312D894501B06 /* rich-text-cross-platform */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "rich-text-cross-platform"; path = ../..; sourceTree = SOURCE_ROOT; };
+		F969C04DA91038677928D1FA /* DocumentLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentLibrary.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		765DB95522EF971866B3EC70 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2D3274E3C2EB16FB6119CFB0 /* RichTextCore in Frameworks */,
+				C188C208CD290CEE6C3B9AE6 /* RichTextEditor in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		831777A56848869736BBEE83 = {
+			isa = PBXGroup;
+			children = (
+				95919582F66C0FD78D29BD01 /* Packages */,
+				8E92DD261A87D8010801AFE1 /* RichTextEditorVisionDemo */,
+				DBD8A9D9A9AE8342ADDA73CB /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		8E92DD261A87D8010801AFE1 /* RichTextEditorVisionDemo */ = {
+			isa = PBXGroup;
+			children = (
+				0C2270B29216F9985179C528 /* DemoServices.swift */,
+				2B09A48BA8065EF756740F2C /* Document.swift */,
+				77F3FB6D578B02B900550FA6 /* DocumentGalleryView.swift */,
+				F969C04DA91038677928D1FA /* DocumentLibrary.swift */,
+				535664DBC99FB6A5E8BC7E6F /* DocumentWindowView.swift */,
+				19CD32B3114DA13D666C9D1F /* RichTextEditorVisionDemoApp.swift */,
+			);
+			path = RichTextEditorVisionDemo;
+			sourceTree = "<group>";
+		};
+		95919582F66C0FD78D29BD01 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				B03B6B131E7312D894501B06 /* rich-text-cross-platform */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		DBD8A9D9A9AE8342ADDA73CB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				764408B9B6D9FD96BD335949 /* RichTextEditorVisionDemo.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		19D577552343C9ACC27AF652 /* RichTextEditorVisionDemo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FA56B347C4FBAEC958840047 /* Build configuration list for PBXNativeTarget "RichTextEditorVisionDemo" */;
+			buildPhases = (
+				DF976D6F8B02E373C714993C /* Sources */,
+				765DB95522EF971866B3EC70 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RichTextEditorVisionDemo;
+			packageProductDependencies = (
+				0C733E4E8BC0FB2BB35A7A69 /* RichTextCore */,
+				D3BFDBCF60064DD5115E4727 /* RichTextEditor */,
+			);
+			productName = RichTextEditorVisionDemo;
+			productReference = 764408B9B6D9FD96BD335949 /* RichTextEditorVisionDemo.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0040B7B1DFCA5B8E79588411 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					19D577552343C9ACC27AF652 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 9D828BC9C01117FDFDF68DD8 /* Build configuration list for PBXProject "RichTextEditorVisionDemo" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 831777A56848869736BBEE83;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				54AAF27A25B9DA8269EC22F9 /* XCLocalSwiftPackageReference "../.." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = DBD8A9D9A9AE8342ADDA73CB /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				19D577552343C9ACC27AF652 /* RichTextEditorVisionDemo */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		DF976D6F8B02E373C714993C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D4DCA1A7B480E584983FA998 /* DemoServices.swift in Sources */,
+				6B7EFB06E81AE970067A4CBC /* Document.swift in Sources */,
+				76F785AFA845FC0E444739E2 /* DocumentGalleryView.swift in Sources */,
+				5E8F87EFAB5D535BFD82D1BC /* DocumentLibrary.swift in Sources */,
+				5AB69B339624260F1381547D /* DocumentWindowView.swift in Sources */,
+				AC92AB76E4B07D5F3F54CD9C /* RichTextEditorVisionDemoApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		272765A1496642385ACA8719 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richtextcrossplatform.demo.RichTextEditorVisionDemo;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "xros xrsimulator";
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 7;
+			};
+			name = Debug;
+		};
+		A71B7D9AF0DC2B8004A10195 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
+		B5A059D64250F7E3BFE089F8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		B770A1C74E7499F4369BCA61 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richtextcrossplatform.demo.RichTextEditorVisionDemo;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "xros xrsimulator";
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 7;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9D828BC9C01117FDFDF68DD8 /* Build configuration list for PBXProject "RichTextEditorVisionDemo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B5A059D64250F7E3BFE089F8 /* Debug */,
+				A71B7D9AF0DC2B8004A10195 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FA56B347C4FBAEC958840047 /* Build configuration list for PBXNativeTarget "RichTextEditorVisionDemo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				272765A1496642385ACA8719 /* Debug */,
+				B770A1C74E7499F4369BCA61 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		54AAF27A25B9DA8269EC22F9 /* XCLocalSwiftPackageReference "../.." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0C733E4E8BC0FB2BB35A7A69 /* RichTextCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RichTextCore;
+		};
+		D3BFDBCF60064DD5115E4727 /* RichTextEditor */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RichTextEditor;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 0040B7B1DFCA5B8E79588411 /* Project object */;
+}

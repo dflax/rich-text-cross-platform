@@ -1,0 +1,39 @@
+name: RichTextEditorVisionDemo
+options:
+  bundleIdPrefix: com.richtextcrossplatform.demo
+  deploymentTarget:
+    visionOS: "26.0"
+packages:
+  RichTextCrossPlatform:
+    path: ../..
+targets:
+  RichTextEditorVisionDemo:
+    type: application
+    platform: auto
+    supportedDestinations: [visionOS]
+    sources:
+      - path: RichTextEditorVisionDemo
+    dependencies:
+      - package: RichTextCrossPlatform
+        product: RichTextCore
+      - package: RichTextCrossPlatform
+        product: RichTextEditor
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.richtextcrossplatform.demo.RichTextEditorVisionDemo
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: true
+        ENABLE_PREVIEWS: true
+        # Automatic signing, no team hardcoded here — pick your own team in Xcode's Signing &
+        # Capabilities tab (a free personal-team Apple ID is enough for a device you own). Do
+        # NOT set CODE_SIGNING_ALLOWED/CODE_SIGNING_REQUIRED to false here even for local
+        # Simulator testing with no team selected: that setting forces a completely unsigned
+        # binary regardless of what team gets selected afterward, which builds and runs fine on
+        # Simulator but a real device refuses to install outright ("The executable is not
+        # codesigned") — confirmed the hard way on the iOS/macOS example app (see its
+        # docs/ROADMAP.md entry). For a headless/CI build with no team available, pass
+        # CODE_SIGNING_ALLOWED=NO as an xcodebuild command-line override instead of baking it
+        # into this shared project file.
+        CODE_SIGN_STYLE: Automatic

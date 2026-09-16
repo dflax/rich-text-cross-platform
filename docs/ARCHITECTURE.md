@@ -119,6 +119,42 @@ into it — not by `swift build`, `swift test`, or code review — which is the 
 `examples/ios-basic`'s Xcode project builds for macOS as a first-class destination rather than
 existing only for iOS.
 
+## visionOS: the same UIKit implementation, a different toolbar placement
+
+visionOS is not a third text-editing implementation the way macOS is — it shares UIKit with iOS,
+so `RichTextCore`, `RichTextEditorModel`, and `RichTextTextView` (all backed by `UITextView` and
+TextKit 2) type-check and run unmodified. There is no `...Vision.swift` file anywhere in this
+package; visionOS takes the exact same `#if canImport(UIKit)` branch iOS already does. Confirmed
+by direct compilation against the real visionOS SDK
+(`xcrun --sdk xrsimulator swiftc -target arm64-apple-xros26.0-simulator`), not inferred from "it's
+UIKit-based" as an assumption — see `docs/visionos.md` for the full assessment this was based on.
+
+The one thing that doesn't carry over unmodified is `RichTextFormatBar`'s chrome and placement:
+
+- **Liquid Glass has no visionOS equivalent API — because visionOS doesn't need the same opt-in.**
+  `GlassEffectContainer` and `.glassEffect(in:)` are both `@available(visionOS, unavailable)`;
+  visionOS's own materials system is built into the compositor, and its API for the same effect is
+  `.glassBackgroundEffect(in:)` with no container wrapper needed. `RichTextFormatBar.swift` branches
+  on `#if os(visionOS)` for both call sites (the bar's capsule and the `Aa` panel's rounded
+  rectangle) plus the outer `GlassEffectContainer`/`Group` wrapper — a one-file, platform-
+  conditional swap, not a rewrite.
+- **The toolbar lives in a window ornament, not `.safeAreaInset(edge: .bottom)`.** A floating bar
+  docked above the keyboard is an iOS idiom that assumes a keyboard and a phone-sized content
+  area; visionOS's own idiom for a persistent, secondary control surface attached to a window is
+  an ornament (`.ornament(attachmentAnchor:contentAlignment:ornament:)`), positioned outside the
+  window's own content rather than floating inside it. `RichTextEditor.swift`'s `editor(_:_:)`
+  branches on `#if os(visionOS)` to attach the toolbar via
+  `.ornament(visibility: .automatic, attachmentAnchor: .scene(.bottom), contentAlignment: .center)`
+  instead of `.safeAreaInset`, keeping the iOS/macOS behavior unchanged in the `#else` branch. This
+  was a deliberate product decision, not a side effect of making the Liquid Glass swap compile —
+  see `docs/visionos.md`'s "What this does *not* resolve" section for why it was left open rather
+  than decided silently.
+
+Both changes were verified by direct compilation against the real visionOS SDK, and
+`examples/visionos-demo` builds and runs (unsigned, in the visionOS Simulator) on top of them —
+see that example's own README for what it demonstrates. Not yet done: a hands-on typing/formatting
+pass the way macOS got (see "The macOS editor" above), and any pass on real Vision Pro hardware.
+
 ## One document, one mutable copy
 
 `RichTextEditorModel` (the `@Observable` state behind `RichTextEditor`) holds no `Delta` copy

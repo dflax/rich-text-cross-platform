@@ -156,10 +156,20 @@ public struct RichTextEditor: View {
                 .frame(maxWidth: 720)
                 .frame(maxWidth: .infinity)
         }
+        #if os(visionOS)
+        // visionOS's own idiom for a persistent, secondary control surface is an ornament
+        // attached to the window edge, not a bar docked inside the content `ScrollView` the way
+        // `.safeAreaInset` places it on iOS/macOS — see docs/ARCHITECTURE.md's visionOS section
+        // and docs/visionos.md for why this isn't just an API substitution.
+        .ornament(visibility: .automatic, attachmentAnchor: .scene(.bottom), contentAlignment: .center) {
+            toolbar(for: model)
+        }
+        #else
         .safeAreaInset(edge: .bottom) {
             toolbar(for: model)
                 .padding(.bottom, 4)
         }
+        #endif
         .overlay(alignment: .top) { banners(model) }
         .photosPicker(isPresented: $showingPhotoPicker, selection: $photoItem, matching: .images)
         .onChange(of: photoItem) { _, item in

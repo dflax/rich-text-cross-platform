@@ -11,6 +11,14 @@ import SwiftUI
 /// it. Supply your own view instead of this one via `RichTextEditorConfiguration.toolbar` if
 /// you'd rather not take the Liquid Glass look, or need to support an earlier OS for the rest of
 /// your app.
+///
+/// visionOS carries its own native materials system rather than opting into Liquid Glass the way
+/// iOS/macOS 26 do — `GlassEffectContainer`/`.glassEffect(in:)` are marked
+/// `@available(visionOS, unavailable)`. The `#if os(visionOS)` branches below swap in
+/// `.glassBackgroundEffect(in:)` and a plain `Group` instead, verified to compile against the
+/// real visionOS SDK (see `docs/visionos.md`). On visionOS this bar is also placed in an
+/// `.ornament` rather than docked to the content via `.safeAreaInset` — see
+/// `RichTextEditor.swift`'s `editor(_:_:)` and `docs/ARCHITECTURE.md`'s visionOS section.
 struct RichTextFormatBar: View {
     let model: RichTextEditorModel
     @Binding var isPanelOpen: Bool
@@ -20,6 +28,18 @@ struct RichTextFormatBar: View {
     let onPhoto: () -> Void
 
     var body: some View {
+        #if os(visionOS)
+        Group {
+            VStack(spacing: 10) {
+                if isPanelOpen {
+                    formatPanel
+                        .transition(.scale(scale: 0.94, anchor: .bottom).combined(with: .opacity))
+                }
+                bar
+            }
+        }
+        .animation(.spring(response: 0.28, dampingFraction: 0.86), value: isPanelOpen)
+        #else
         GlassEffectContainer(spacing: 16) {
             VStack(spacing: 10) {
                 if isPanelOpen {
@@ -30,6 +50,7 @@ struct RichTextFormatBar: View {
             }
         }
         .animation(.spring(response: 0.28, dampingFraction: 0.86), value: isPanelOpen)
+        #endif
     }
 
     // MARK: - The always-visible bar
@@ -62,7 +83,11 @@ struct RichTextFormatBar: View {
         }
         .padding(.horizontal, 8)
         .frame(height: 48)
+        #if os(visionOS)
+        .glassBackgroundEffect(in: Capsule())
+        #else
         .glassEffect(in: Capsule())
+        #endif
     }
 
     private func glassButton(systemImage: String, isActive: Bool, label: String, action: @escaping () -> Void) -> some View {
@@ -103,7 +128,11 @@ struct RichTextFormatBar: View {
         }
         .padding(.vertical, 4)
         .frame(width: 320)
+        #if os(visionOS)
+        .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 20))
+        #else
         .glassEffect(in: RoundedRectangle(cornerRadius: 20))
+        #endif
     }
 
     private func styleRow(
