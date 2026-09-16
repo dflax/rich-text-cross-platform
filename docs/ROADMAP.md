@@ -65,7 +65,13 @@ continues. Update this as items move between sections; don't let it silently go 
   verified by actually importing the built bundle in Node and checking every expected export is
   present, not just that `tsup` exited 0. `react`/`react-dom`/`quill` stay externalized
   peer dependencies, not bundled. `main`/`module`/`types`/`exports` all point at `dist/` now.
-  Not yet published to the npm registry — see below.
+  Not yet published to the npm registry — see below. Consumable without it in the meantime: a
+  `prepare` script (added 2026-09-16) builds `dist/` automatically for a tarball install
+  (`npm pack`, then `npm install <path-or-url>` — verified end to end, including served over HTTP
+  to simulate a GitHub Release asset). See the package's own README for what does and does not
+  work here, including a concretely-tested negative: the commonly-cited git-URL
+  `#ref?subdirectory=...` syntax does not work against this repo with plain npm 11.19.1, since
+  this package lives in a subdirectory, not the repo root.
 - **`docs/backends/mysql.md`, `mongodb.md`, `firebase.md`, `cloudkit.md`, `supabase.md`,
   `powersync.md`** — written guidance mapping the storage contract (`docs/backends/README.md`)
   onto each store. `cloudkit.md` (added 2026-09-15) is verified by direct compilation against the

@@ -54,9 +54,32 @@ npm test          # round-trip + vocabulary tests against the shared fixture cor
 npm run typecheck
 ```
 
+## Using this before it's on the npm registry
+
+Not published yet — see below — but you don't need the registry to consume it. `package.json`'s
+`prepare` script means `dist/` gets built automatically wherever npm runs its own lifecycle
+scripts, which covers both routes below (verified end to end, not assumed):
+
+- **A tarball.** `npm run build && npm pack` produces `rich-text-cross-platform-editor-<version>.tgz`.
+  `npm install <path-or-url-to-that-file>` works exactly like installing from the registry —
+  verified by installing the packed tarball into a scratch project (both from a local path and
+  served over HTTP, simulating a GitHub Release asset URL) and confirming every expected export
+  imports correctly. Attaching the `.tgz` to a GitHub Release and pointing consumers at that
+  release-asset URL is the most reproducible version of this.
+- **A plain git dependency**, if you only need the repo root's two Swift products and don't
+  specifically need this web package: `npm install
+  "git+https://github.com/dflax/rich-text-cross-platform.git#main"` works for a package whose
+  `package.json` sits at the *root* of the repo. It does **not** work for this package as-is,
+  because it lives in a subdirectory (`web/packages/rich-text-editor`) — the commonly-cited
+  `#main?subdirectory=...` query-parameter syntax was tested directly against this repo and
+  **does not work** with plain npm (11.19.1 here): npm treated the whole string after `#` as a
+  literal (and invalid) git ref rather than splitting on `?subdirectory=`. Don't rely on it
+  without re-verifying against whatever npm version you're actually running.
+
 ## Not yet done (see `docs/ROADMAP.md`)
 
-- Publishing to the npm registry itself (the build step is done; `npm publish` isn't).
+- Publishing to the npm registry itself (the build step and the no-registry workarounds above are
+  done; `npm publish` isn't).
 - Image upload wiring / a sample app showing multiple configurations (the iOS side has this in
   `examples/rich-text-editor-demo/`; the web equivalent doesn't exist yet).
 - Porting the fork point's full round-trip test suite (this package's `test/round-trip.test.ts`
