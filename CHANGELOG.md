@@ -6,6 +6,16 @@ Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.o
 
 ## [Unreleased]
 
+### Added
+
+- `RichTextEditorConfiguration.showsUnsavedIndicator` (default `true`, matching prior behavior) —
+  a host with its own formal Save/Create button (no auto-save) found the default gray "Unsaved"
+  pill (shown whenever `model.isDirty`) read as a false alarm: every normal keystroke briefly
+  showed it even though the host's own explicit save path was always going to pick up the change
+  regardless of timing. Set `false` to suppress it for that kind of host.
+
+## [0.4.3] - 2026-09-17
+
 ### Fixed
 
 - `RichTextEditor`'s plain `.task { await load() }` was observed, via real hands-on device

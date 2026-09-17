@@ -31,17 +31,26 @@ public struct RichTextEditorConfiguration: Sendable {
     /// minimum for the rest of your app while still editing rich text on newer devices. Receives
     /// the same `RichTextEditorModel` the default toolbar drives; see `docs/guides/custom-toolbar.md`.
     public var toolbar: (@MainActor @Sendable (RichTextEditorModel) -> AnyView)?
+    /// Show the gray "Unsaved" pill while `model.isDirty` (real edits pending the ~1s debounce or
+    /// a save). Real host feedback: with a host-provided Save/Create button (no auto-save), this
+    /// read as a false alarm — every normal keystroke briefly showed "Unsaved" even though the
+    /// host's own explicit save path was going to pick up the change regardless. Leave `true`
+    /// (the original behavior) for a host that has no separate save step of its own to reassure
+    /// the user with.
+    public var showsUnsavedIndicator: Bool = true
 
     public init(
         allowsImages: Bool = true,
         allowsLinks: Bool = true,
         imageDownscaling: ImageDownscaling = .default,
-        toolbar: (@MainActor @Sendable (RichTextEditorModel) -> AnyView)? = nil
+        toolbar: (@MainActor @Sendable (RichTextEditorModel) -> AnyView)? = nil,
+        showsUnsavedIndicator: Bool = true
     ) {
         self.allowsImages = allowsImages
         self.allowsLinks = allowsLinks
         self.imageDownscaling = imageDownscaling
         self.toolbar = toolbar
+        self.showsUnsavedIndicator = showsUnsavedIndicator
     }
 
     public static let `default` = RichTextEditorConfiguration()
@@ -353,7 +362,7 @@ public struct RichTextEditor: View {
             if let error = model.lastError {
                 banner(error, tint: .orange, systemImage: "exclamationmark.triangle.fill")
             }
-            if model.isDirty {
+            if configuration.showsUnsavedIndicator, model.isDirty {
                 banner("Unsaved", tint: .gray, systemImage: "circle.fill")
             }
         }
