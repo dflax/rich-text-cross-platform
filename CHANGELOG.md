@@ -6,6 +6,26 @@ Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.o
 
 ## [Unreleased]
 
+### Fixed
+
+- `RichTextEditor`'s plain `.task { await load() }` was observed, via real hands-on device
+  testing (not simulator - this never surfaced there), to actually fire a second time after the
+  editor was already loaded and live. That second firing created a SECOND `RichTextEditorModel`,
+  replacing the view's `model` state - and therefore what the toolbar and `onModelReady` (below)
+  operate on - while `RichTextTextView`'s own `UIViewRepresentable`/coordinator, whose identity
+  SwiftUI preserved across the re-render, stayed attached to the FIRST, now-orphaned model. Typing
+  kept working (native `UITextView` behavior, independent of the model), but every toolbar action
+  - bold, italic, lists, links - and every save silently no-opped, because they all ran on the
+  second model, whose `textView` was never attached to anything. `load()` now guards against
+  re-entry with a flag set synchronously before its `await`, so a second firing (or two
+  near-simultaneous ones) can't create a competing model. Not unit-testable at this layer without
+  new SwiftUI-view-testing infrastructure this package doesn't have yet (its own test suite
+  exercises `RichTextEditorModel` directly, bypassing `UIViewRepresentable` entirely) - verified
+  via real device testing with temporary diagnostic logging, confirming the same `UITextView`
+  stayed attached to the same model across load, typing, formatting, and save.
+
+## [0.4.2] - 2026-09-17
+
 ### Added
 
 - `RichTextEditor.onModelReady: ((RichTextEditorModel) -> Void)?` — an optional init parameter,

@@ -98,6 +98,19 @@ public struct RichTextEditor: View {
 
     @State private var model: RichTextEditorModel?
     @State private var initialContent: NSAttributedString?
+    /// Guards `load()` against running twice — confirmed by real hands-on device testing (not
+    /// simulator) to actually happen in practice: this view's plain `.task { await load() }` was
+    /// observed firing a second time after the editor was already loaded and live. Without this
+    /// guard, that second firing creates a SECOND `RichTextEditorModel`, replacing `model` (and
+    /// therefore what the toolbar and `onModelReady` operate on) - while `RichTextTextView`'s own
+    /// `UIViewRepresentable`/coordinator, whose identity SwiftUI preserved across the same
+    /// re-render, stays attached to the FIRST, now-orphaned model. The user-visible result: typing
+    /// still works (native `UITextView` behavior, independent of the model), but every toolbar
+    /// action (bold/italic/lists/links) and every save silently no-ops, because they all run on
+    /// the second model, whose `textView` was never attached to anything. Set synchronously
+    /// (before the `await` inside `load()`), not just inferred from `model == nil`, so two
+    /// near-simultaneous firings can't both pass the check before either finishes loading.
+    @State private var hasStartedLoading = false
     @State private var isFocused = true
     @State private var isPanelOpen = false
 
@@ -144,6 +157,8 @@ public struct RichTextEditor: View {
     }
 
     private func load() async {
+        guard !hasStartedLoading else { return }
+        hasStartedLoading = true
         let (created, content) = await RichTextEditorModel.load(delta: delta, imageStore: imageStore)
         model = created
         initialContent = content
