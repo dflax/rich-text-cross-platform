@@ -6,6 +6,25 @@ Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.o
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-09-17
+
+### Changed
+
+- iOS: the format toolbar now docks to the keyboard via `UITextView.inputAccessoryView`
+  (`RichTextEditorUITextView`) instead of a SwiftUI `.safeAreaInset(edge: .bottom)` toolbar. Real
+  hands-on device testing found the `.safeAreaInset` toolbar stayed pinned to the bottom of the
+  text view's own (auto-growing) frame rather than the keyboard on anything longer than a
+  screenful, forcing a scroll to reach it on a long document. Two separate attempts at fixing that
+  by moving `RichTextEditor` into its own full-screen `.sheet` both broke on an unrelated SwiftUI
+  bug instead (a `.sheet` nested inside another sheet's own `NavigationStack` collapsing the whole
+  presentation stack — confirmed via live console streaming to not be a crash). `inputAccessoryView`
+  sidesteps that class of problem entirely: UIKit positions it against the keyboard directly,
+  independent of whatever ScrollView/Form/sheet structure the host embeds this editor in — inline
+  or full-screen, sheet-nested or not. macOS (`.safeAreaInset`, no software keyboard) and visionOS
+  (`.ornament`) are unaffected.
+
+## [0.4.4] - 2026-09-17
+
 ### Added
 
 - `RichTextEditorConfiguration.showsUnsavedIndicator` (default `true`, matching prior behavior) —

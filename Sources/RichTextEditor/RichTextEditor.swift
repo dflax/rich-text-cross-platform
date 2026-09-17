@@ -184,6 +184,7 @@ public struct RichTextEditor: View {
     @ViewBuilder
     private func editor(_ model: RichTextEditorModel, _ initialContent: NSAttributedString) -> some View {
         ScrollView {
+            #if os(macOS)
             RichTextTextView(model: model, initialContent: initialContent, focused: $isFocused)
                 .fixedSize(horizontal: false, vertical: true)
                 // Horizontal halved from the original 16pt (real hands-on feedback: the reading
@@ -193,21 +194,39 @@ public struct RichTextEditor: View {
                 .padding(.horizontal, 8)
                 .frame(maxWidth: 720)
                 .frame(maxWidth: .infinity)
+            #else
+            // iOS/visionOS: hands the toolbar to `RichTextTextView` so the iOS text view can pin
+            // it to the keyboard via `inputAccessoryView` instead of `.safeAreaInset` — see that
+            // type's own doc comment for why. visionOS ignores this (keeps its `.ornament` below).
+            RichTextTextView(
+                model: model,
+                initialContent: initialContent,
+                focused: $isFocused,
+                accessoryToolbar: AnyView(toolbar(for: model))
+            )
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.vertical, 16)
+            .padding(.horizontal, 8)
+            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity)
+            #endif
         }
         #if os(visionOS)
         // visionOS's own idiom for a persistent, secondary control surface is an ornament
         // attached to the window edge, not a bar docked inside the content `ScrollView` the way
-        // `.safeAreaInset` places it on iOS/macOS — see docs/ARCHITECTURE.md's visionOS section
+        // `.safeAreaInset` places it on macOS — see docs/ARCHITECTURE.md's visionOS section
         // and docs/visionos.md for why this isn't just an API substitution.
         .ornament(visibility: .automatic, attachmentAnchor: .scene(.bottom), contentAlignment: .center) {
             toolbar(for: model)
         }
-        #else
+        #elseif os(macOS)
         .safeAreaInset(edge: .bottom) {
             toolbar(for: model)
                 .padding(.bottom, 4)
         }
         #endif
+        // iOS: no additional modifier here — the toolbar is docked to the keyboard via
+        // `RichTextEditorUITextView.inputAccessoryView`, wired above.
         .overlay(alignment: .top) { banners(model) }
         .photosPicker(isPresented: $showingPhotoPicker, selection: $photoItem, matching: .images)
         .onChange(of: photoItem) { _, item in

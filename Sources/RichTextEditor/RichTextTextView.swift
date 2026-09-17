@@ -9,6 +9,42 @@ import UniformTypeIdentifiers
 /// after a *programmatic* mutation (insert image, toggle a list) that never passes through the
 /// delegate callbacks a binding-based approach would depend on.
 final class RichTextEditorUITextView: UITextView {
+    #if os(iOS)
+    private var accessoryHostingController: UIHostingController<AnyView>?
+
+    /// Pins the format toolbar directly to the keyboard via `UITextView.inputAccessoryView` —
+    /// hierarchy-independent, unlike the `.safeAreaInset`-based toolbar this replaced (still used
+    /// on macOS/visionOS), which depends on this text view's enclosing ScrollView/Form/sheet
+    /// structure to size and position it correctly. Real hands-on device testing found the
+    /// `.safeAreaInset` toolbar stayed pinned to the bottom of the (auto-growing) text view
+    /// instead of the keyboard on a long document; two separate attempts at fixing that by moving
+    /// `RichTextEditor` into its own full-screen `.sheet` both broke on an unrelated SwiftUI bug
+    /// (a `.sheet` nested inside another sheet's own `NavigationStack` collapsing the whole
+    /// presentation). `inputAccessoryView` sidesteps that entire class of problem: it's positioned
+    /// by UIKit against the keyboard itself, regardless of what SwiftUI container this text view
+    /// happens to live inside.
+    func setAccessoryContent(_ content: AnyView) {
+        if let accessoryHostingController {
+            accessoryHostingController.rootView = content
+            return
+        }
+        let hosting = UIHostingController(rootView: content)
+        hosting.view.backgroundColor = .clear
+        hosting.safeAreaRegions = []
+        // Lets the accessory view's height track the SwiftUI content's own ideal size — it
+        // changes whenever the "Aa" panel opens/closes — instead of a fixed frame set once here.
+        hosting.sizingOptions = [.intrinsicContentSize]
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        accessoryHostingController = hosting
+        if isFirstResponder { reloadInputViews() }
+    }
+
+    override var inputAccessoryView: UIView? {
+        get { accessoryHostingController?.view }
+        set { /* no-op: content is driven exclusively via setAccessoryContent(_:) */ }
+    }
+    #endif
+
     override var intrinsicContentSize: CGSize {
         // Before the first real layout pass `bounds.width` is 0; a generous placeholder width
         // is fine since `layoutSubviews` invalidates this again as soon as a real width lands.
@@ -117,6 +153,12 @@ struct RichTextTextView: UIViewRepresentable {
     let model: RichTextEditorModel
     let initialContent: NSAttributedString
     @Binding var focused: Bool
+    /// iOS only: SwiftUI content pinned above the keyboard via `RichTextEditorUITextView`'s
+    /// `inputAccessoryView` override. Ignored on visionOS (compiled from this same file, since
+    /// visionOS `canImport(UIKit)` too), which keeps its own `.ornament`-based toolbar placement —
+    /// see `RichTextEditor.swift`'s platform branching. Defaulted so a visionOS call site doesn't
+    /// need to pass one.
+    var accessoryToolbar: AnyView = AnyView(EmptyView())
 
     func makeUIView(context: Context) -> RichTextEditorUITextView {
         let view = RichTextEditorUITextView()
@@ -150,6 +192,9 @@ struct RichTextTextView: UIViewRepresentable {
         view.setContentHuggingPriority(.required, for: .vertical)
 
         model.attach(view)
+        #if os(iOS)
+        view.setAccessoryContent(accessoryToolbar)
+        #endif
 
         DispatchQueue.main.async {
             assert(view.textLayoutManager != nil, "UITextView fell back to TextKit 1 — list markers and hanging indent will not render correctly.")
@@ -158,6 +203,9 @@ struct RichTextTextView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: RichTextEditorUITextView, context: Context) {
+        #if os(iOS)
+        uiView.setAccessoryContent(accessoryToolbar)
+        #endif
         if focused, !uiView.isFirstResponder {
             uiView.becomeFirstResponder()
         } else if !focused, uiView.isFirstResponder {
