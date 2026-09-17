@@ -152,7 +152,11 @@ public struct RichTextEditor: View {
         ScrollView {
             RichTextTextView(model: model, initialContent: initialContent, focused: $isFocused)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(16)
+                // Horizontal halved from the original 16pt (real hands-on feedback: the reading
+                // column felt too narrow on a phone-width screen) - vertical breathing room above/
+                // below the text is a separate concern and stays at 16pt.
+                .padding(.vertical, 16)
+                .padding(.horizontal, 8)
                 .frame(maxWidth: 720)
                 .frame(maxWidth: .infinity)
         }

@@ -197,6 +197,20 @@ struct RichTextTextView: UIViewRepresentable {
             if !focused.wrappedValue { focused.wrappedValue = true }
         }
 
+        /// Without this override, `UITextView`'s default behavior activates a `.link` attribute
+        /// on a single tap even while `isEditable == true` — confirmed by real hands-on device
+        /// testing, not assumed: tapping into linked text opened the URL instead of placing a
+        /// cursor there, making a link's own text impossible to select or edit by tapping (the
+        /// only workaround was iOS's keyboard-trackpad cursor-drag gesture). `.invokeDefaultAction`
+        /// is what a plain tap sends; returning `false` for it makes tapping linked text behave
+        /// like tapping any other text — cursor placement, nothing more — matching Notes.app and
+        /// Mail's own editable-link behavior. `.presentActions` (long-press) still returns `true`,
+        /// so the system's own Open/Copy Link menu remains available; a link stays fully usable,
+        /// just not by accident on a single tap.
+        func textView(_ textView: UITextView, shouldInteractWith url: URL, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
+            interaction == .presentActions
+        }
+
         func textViewDidEndEditing(_ textView: UITextView) {
             if focused.wrappedValue { focused.wrappedValue = false }
         }

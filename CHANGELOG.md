@@ -18,6 +18,23 @@ Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.o
 
 ### Fixed
 
+- `ImageDownscaler` failed outright on a HEIC photo picked via `PhotosPicker` on iOS (HEIC has
+  been the default Photos-library capture format since iOS 11) — surfaced to the user as "Could
+  not re-encode the picked image," found via real hands-on device testing, not a simulator. The
+  previous implementation decoded via `UIImage(data:)`/`NSImage(data:)` plus a manual redraw;
+  rewritten on `CGImageSource`/`CGImageDestination` (ImageIO) instead, which handles HEIC/HEIF
+  (and everything else ImageIO supports) directly, bakes in EXIF orientation correctly via
+  `kCGImageSourceCreateThumbnailWithTransform`, and removes the `#if os(macOS)` split this
+  function used to need entirely — one implementation for both platforms now.
+- `RichTextEditor`: tapping linked text opened the URL instead of placing a cursor there, even
+  though the text view is editable — `UITextView`'s default behavior activates a `.link`
+  attribute on a single tap regardless of `isEditable`. The only way to get a cursor inside a
+  link's text was iOS's keyboard-trackpad cursor-drag gesture. Fixed by returning `false` for
+  `.invokeDefaultAction` in `shouldInteractWith`; `.presentActions` (long-press) still returns
+  `true`, so the system's Open/Copy Link menu remains available — a link is fully usable, just
+  not activated by accident on a plain tap, matching Notes.app/Mail's own editable-link behavior.
+- `RichTextEditor`'s horizontal margins (16pt each side) read as too wide on a phone-width screen
+  in real hands-on testing — halved to 8pt; vertical padding is unchanged.
 - Web package: a HEIC photo pasted from Notes.app on macOS (or any paste where Quill's own image
   matching can't resolve the `<img>` to a string — observed with a browser `blob:` URL src) could
   produce a non-string image embed (`{"insert":{"image":true}}`) that the strict decoder rejects,

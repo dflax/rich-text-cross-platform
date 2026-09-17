@@ -1,9 +1,6 @@
 import Foundation
-#if os(macOS)
-import AppKit
-#else
-import UIKit
-#endif
+import ImageIO
+import UniformTypeIdentifiers
 
 /// Long-edge pixel cap and JPEG quality for a picked image before it reaches
 /// `RichTextImageUploading`. Applied once, at pick time — never re-derived from whatever the
@@ -32,35 +29,38 @@ public struct ImageDownscaling: Sendable {
 /// Worth being precise about why this matters: a modern phone photo is several megabytes, and
 /// every reader who opens the document pays that download. Shrinking once at upload time is the
 /// only place the cost can be paid once instead of on every read.
+///
+/// Built on `CGImageSource`/`CGImageDestination` (ImageIO), not `UIImage(data:)`/`NSImage(data:)`
+/// plus a manual redraw - real hands-on device testing found the previous UIKit-based path failed
+/// outright on a HEIC photo picked from the Photos library (iOS's own default camera format since
+/// iOS 11). ImageIO is Apple's own lower-level, format-agnostic decoder - the same one `UIImage`/
+/// `NSImage` sit on top of - and its thumbnail-generation entry point does the decode, EXIF-
+/// orientation correction, and downscale in one pass, which is both more robust across formats
+/// (HEIC/HEIF included) and removes the `#if os(macOS)` split this function used to need entirely.
 enum ImageDownscaler {
     static func downscaledJPEG(from data: Data, configuration: ImageDownscaling) -> Data? {
-        #if os(macOS)
-        guard let source = NSImage(data: data) else { return nil }
-        let size = source.size
-        #else
-        guard let source = UIImage(data: data) else { return nil }
-        let size = source.size
-        #endif
-        guard size.width > 0, size.height > 0 else { return nil }
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
 
-        let longEdge = max(size.width, size.height)
-        let scale = longEdge > configuration.maxLongEdge ? configuration.maxLongEdge / longEdge : 1
-        let target = CGSize(width: (size.width * scale).rounded(), height: (size.height * scale).rounded())
-
-        #if os(macOS)
-        let resized = NSImage(size: target)
-        resized.lockFocus()
-        source.draw(in: NSRect(origin: .zero, size: target))
-        resized.unlockFocus()
-        guard let tiff = resized.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) else { return nil }
-        return rep.representation(using: .jpeg, properties: [.compressionFactor: configuration.jpegQuality])
-        #else
-        let format = UIGraphicsImageRendererFormat.default()
-        format.scale = 1
-        let resized = UIGraphicsImageRenderer(size: target, format: format).image { _ in
-            source.draw(in: CGRect(origin: .zero, size: target))
+        let thumbnailOptions: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceThumbnailMaxPixelSize: configuration.maxLongEdge,
+            // Bakes EXIF orientation into the pixel data - without this, a portrait HEIC photo
+            // (whose raw pixel buffer is often landscape, corrected only by an orientation tag)
+            // would re-encode sideways.
+            kCGImageSourceCreateThumbnailWithTransform: true,
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbnailOptions as CFDictionary) else {
+            return nil
         }
-        return resized.jpegData(compressionQuality: configuration.jpegQuality)
-        #endif
+
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(output, UTType.jpeg.identifier as CFString, 1, nil) else {
+            return nil
+        }
+        let destinationOptions: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality: configuration.jpegQuality]
+        CGImageDestinationAddImage(destination, cgImage, destinationOptions as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else { return nil }
+
+        return output as Data
     }
 }
