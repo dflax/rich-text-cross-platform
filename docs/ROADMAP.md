@@ -359,3 +359,15 @@ Ordered by what unblocks the most other work.
    above.) The fork point never finished this specific cross-platform pass before extraction; it
    needs doing here since this is a different package with a different public API surface, not the
    same code under a new name.
+4. **Feature request from real hands-on use (2026-09-18, `flux-student-directory`'s Daniel)**:
+   `ReadLayout`'s continuous-selection design deliberately breaks selection at an image — its own
+   doc comment already documents this as a known, defensible trade ("an image genuinely interrupts
+   the text"). Confirmed working as designed on-device, but Daniel would like selecting a photo
+   itself, and selecting continuously *across* a photo (text → image → more text in one drag), to
+   eventually work rather than remain a hard boundary. Not yet scoped in detail - the image itself
+   would need to become a selectable "attachment" the host's copy/share action can act on (matching
+   the long-press-to-copy/save gesture `flux-student-directory` already built independently for
+   images, per its own `TASK-220`), and the two text spans on either side of an image would need to
+   be part of one continuous selection *range* while the image still renders as its own view - a
+   real design question, not a small tweak to `ReadLayout.groups(from:)`'s existing image-breaks-a-
+   span behavior.
