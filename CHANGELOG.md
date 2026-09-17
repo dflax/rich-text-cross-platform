@@ -8,13 +8,20 @@ Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.o
 
 ### Added
 
-- Real build step for the web package (`tsup`), producing a publishable ESM `dist/` with `.d.ts`
-  declarations. `main`/`module`/`types`/`exports` repointed at it; `react`/`react-dom`/`quill`
-  stay external peer dependencies, not bundled.
-- `CONTRIBUTING.md`, issue templates (bug report, feature request), and a PR template.
-- Web package: `installPasteGuards(quill)`, called automatically by `QuillHost`. Drops every
-  pasted `<img>` before Quill's own image matching runs on it, matching the Swift editor's
-  documented "pasted images are dropped entirely" behavior (`docs/guides/vocabulary-enforcement.md`).
+- `RichTextEditor.onModelReady: ((RichTextEditorModel) -> Void)?` — an optional init parameter,
+  called once as soon as the model finishes loading. Fills the one real gap `docs/guides/
+  saving.md`'s "if you can't use `onDone`" branch left open: that guide says a host with its own
+  Save/Create button should "read `delta`'s current value" before persisting, but without a
+  handle to the live model there was no way to force that value to be current first. A host now
+  captures the model here and, right before reading the `delta` binding, calls
+  `model.encodeIfChanged()` then re-reads `model.savedDelta` — genuinely synchronous, since
+  `encodeIfChanged()` reads straight from the live `UITextView.textStorage` and cancels the
+  pending debounce itself rather than waiting on it.
+
+## [0.4.1] - 2026-09-16
+
+Tagged retroactively while writing this entry — the `[Unreleased]` heading above these entries was
+never cut over when `v0.4.1` was actually tagged. Content unchanged, just correctly dated now.
 
 ### Fixed
 

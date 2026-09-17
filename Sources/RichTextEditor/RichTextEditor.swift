@@ -72,19 +72,28 @@ public struct RichTextEditor: View {
     /// your host is responsible for giving the debounce (~1s) a chance to fire, or triggering a
     /// save itself, before tearing this view down; see `docs/guides/saving.md`.
     private let onDone: (() -> Void)?
+    /// Called once, as soon as the model finishes loading — the missing piece for a host that
+    /// takes `docs/guides/saving.md`'s "don't rely on timing" branch (its own Save/Create button,
+    /// no `onDone`): capture the model here, and before reading the `delta` binding, call
+    /// `model.encodeIfChanged()` then re-read `model.savedDelta`. `encodeIfChanged()` reads
+    /// straight from the live `UITextView.textStorage` and cancels the pending debounce itself, so
+    /// this is genuinely synchronous — no race with a timer the host doesn't control.
+    private let onModelReady: ((RichTextEditorModel) -> Void)?
 
     public init(
         delta: Binding<Delta>,
         imageStore: ImageStore,
         imageUploader: (any RichTextImageUploading)? = nil,
         configuration: RichTextEditorConfiguration = .default,
-        onDone: (() -> Void)? = nil
+        onDone: (() -> Void)? = nil,
+        onModelReady: ((RichTextEditorModel) -> Void)? = nil
     ) {
         self._delta = delta
         self.imageStore = imageStore
         self.imageUploader = imageUploader
         self.configuration = configuration
         self.onDone = onDone
+        self.onModelReady = onModelReady
     }
 
     @State private var model: RichTextEditorModel?
@@ -138,6 +147,7 @@ public struct RichTextEditor: View {
         let (created, content) = await RichTextEditorModel.load(delta: delta, imageStore: imageStore)
         model = created
         initialContent = content
+        onModelReady?(created)
     }
 
     private func save() {

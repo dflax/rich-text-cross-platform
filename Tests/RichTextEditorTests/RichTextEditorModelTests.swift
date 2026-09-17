@@ -65,6 +65,23 @@ struct RichTextEditorModelTests {
         #expect(linkURL == URL(string: "https://example.com"))
     }
 
+    @Test("encodeIfChanged reflects a just-typed edit immediately, without waiting for the ~1s debounce - the exact guarantee docs/guides/saving.md documents and a real host bug depended on: a Create/Save button that reads `delta` right after calling this must see the edit, not a stale value")
+    func encodeIfChangedIsSynchronous() async {
+        let (model, textView) = await makeModel("Hello\n")
+
+        // Simulate a keystroke: mutate the live text storage directly (what the coordinator's
+        // `shouldChangeTextIn` does before calling `markDirty()`), then call `markDirty()` to
+        // schedule the normal 1s debounce - then immediately call `encodeIfChanged()` ourselves,
+        // with no delay, exactly as a host without `onDone` must per the saving guide.
+        textView.textStorage.replaceCharacters(in: NSRange(location: 5, length: 0), with: " world")
+        model.markDirty()
+
+        #expect(model.savedDelta == Delta(ops: [.text("Hello\n")]), "Sanity check: not yet flushed.")
+        let changed = model.encodeIfChanged()
+        #expect(changed)
+        #expect(model.savedDelta == Delta(ops: [.text("Hello world\n")]))
+    }
+
     @Test("insertImage tags the attachment with a resolvable richTextImageInfo")
     func insertImageTagsAttachment() async {
         let (model, textView) = await makeModel()
