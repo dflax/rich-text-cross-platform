@@ -6,6 +6,28 @@ Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.o
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-09-17
+
+### Fixed
+
+- `ReadLayout.groups(from:)`: a wrapped multi-line bullet/numbered list item read correctly in the
+  edit view (real hanging indent, via TextKit's `NSTextList`) but wrapped flush under the marker in
+  the read view — found by hands-on device testing, confirmed to reproduce on iOS and confirmed
+  absent on web (Quill's own CSS handles this correctly there). Root cause: the read path bakes the
+  marker into plain characters (so the whole span can live in one selectable run — see this file's
+  own doc comment) but never attached a hanging-indent `.paragraphStyle`, unlike the edit path.
+  Fixed by attaching the same `headIndent = 28` / `firstLineHeadIndent = 0` the edit path already
+  uses (`NSDeltaCodec.applyVisualBlockStyling`), scoped to exactly the list line's own characters
+  and its own trailing newline — never bleeding onto an adjacent non-list line. Deliberately does
+  NOT set `textLists` (the marker is already literal text here; a renderer that also honored
+  `textLists` would draw it twice).
+  **Known limitation, not fixed at this layer**: SwiftUI's `Text(AttributedString)` silently
+  ignores `.paragraphStyle` entirely — confirmed by direct measurement (an `NSHostingView` wrapping
+  an indented vs. non-indented `Text` at the same fixed width produced byte-identical fitting
+  heights), so a host rendering `.text` groups via plain `Text` still won't see this fix visually.
+  A host needs a real TextKit-backed renderer (`UITextView`/`NSTextView`, `isEditable = false`,
+  `isSelectable = true`) to see the corrected indent — see `docs/guides/read-only-rendering.md`.
+
 ## [0.4.5] - 2026-09-17
 
 ### Changed

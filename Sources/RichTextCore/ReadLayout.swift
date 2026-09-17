@@ -57,16 +57,53 @@ public enum ReadLayout {
         }
     }
 
+    /// Matches the edit path's own indent exactly (`NSDeltaCodec.applyVisualBlockStyling`) so a
+    /// list item looks the same whether it's being edited or read. Deliberately does NOT set
+    /// `textLists` - the marker is already baked into the characters here (unlike the edit path,
+    /// where TextKit draws it), so a renderer that also honors `textLists` would draw the marker
+    /// twice.
+    ///
+    /// **Known limitation, real hands-on device finding, not yet worked around at this layer:**
+    /// SwiftUI's `Text(AttributedString)` silently ignores `.paragraphStyle` entirely - confirmed
+    /// by direct measurement (an `NSHostingView` wrapping an indented vs. non-indented `Text` at
+    /// the same fixed width produced byte-identical fitting heights). A host rendering `.text`
+    /// groups via plain SwiftUI `Text` gets no visible hanging indent: a wrapped list item's
+    /// continuation line falls flush under the marker instead of aligning with the first line's
+    /// text. This attribute is real and round-trips correctly through `AttributedString` (also
+    /// confirmed directly) for any host willing to render through a real text-kit-backed surface
+    /// (`UITextView`/`NSTextView`, `isEditable = false`) instead of `Text` - see
+    /// `docs/guides/read-only-rendering.md`.
+    private static func listParagraphStyle() -> NSParagraphStyle {
+        let style = NSMutableParagraphStyle()
+        style.headIndent = 28
+        style.firstLineHeadIndent = 0
+        return style
+    }
+
+    private static func applyingListStyle(_ style: NSParagraphStyle, to attributed: AttributedString) -> AttributedString {
+        let mutable = NSMutableAttributedString(attributed)
+        mutable.addAttribute(.paragraphStyle, value: style, range: NSRange(location: 0, length: mutable.length))
+        return AttributedString(mutable)
+    }
+
     public static func groups(from blocks: [Block]) -> [Group] {
         var groups: [Group] = []
         var pending = AttributedString()
         var pendingIsEmpty = true
+        // The style the SEPARATOR about to be appended (which terminates the line just added,
+        // not the one about to start) should carry - mirrors `NSDeltaCodec.
+        // applyVisualBlockStyling`'s own `paragraphRange.length + 1`, so a list item's own
+        // trailing newline shares its hanging indent rather than reading as unstyled. `nil` for
+        // a separator that terminates a non-list line, so a list item is never followed by a
+        // stray indent bleeding onto the next, unrelated paragraph.
+        var previousLineListStyle: NSParagraphStyle?
 
         func flushText() {
             guard !pendingIsEmpty else { return }
             groups.append(Group(id: groups.count, content: .text(pending)))
             pending = AttributedString()
             pendingIsEmpty = true
+            previousLineListStyle = nil
         }
 
         for block in blocks {
@@ -83,7 +120,13 @@ public enum ReadLayout {
                 // Blocks within a span are joined by newlines. A blank line in the source is a
                 // block with empty inline content, so it still contributes its separator and
                 // the spacing the author intended survives.
-                if !pendingIsEmpty { pending.append(AttributedString("\n")) }
+                if !pendingIsEmpty {
+                    var separator = AttributedString("\n")
+                    if let previousLineListStyle {
+                        separator = applyingListStyle(previousLineListStyle, to: separator)
+                    }
+                    pending.append(separator)
+                }
 
                 var line = AttributedString()
                 let marker = marker(for: block.kind)
@@ -100,8 +143,19 @@ public enum ReadLayout {
                 body.font = font(for: block.kind)
                 line.append(body)
 
+                var lineListStyle: NSParagraphStyle?
+                switch block.kind {
+                case .bullet, .ordered:
+                    let style = listParagraphStyle()
+                    line = applyingListStyle(style, to: line)
+                    lineListStyle = style
+                default:
+                    break
+                }
+
                 pending.append(line)
                 pendingIsEmpty = false
+                previousLineListStyle = lineListStyle
             }
         }
 
