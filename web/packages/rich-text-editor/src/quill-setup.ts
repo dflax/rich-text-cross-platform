@@ -157,6 +157,31 @@ export interface QuillOptions {
 }
 
 /**
+ * Drops every pasted `<img>` from the incoming Delta entirely, before Quill's own image
+ * matching runs on it. Call once per Quill instance (QuillHost does this for you).
+ *
+ * A pasted image can never become one of our storage-key embeds: a clipboard matcher
+ * must return a Delta synchronously — there is no way to upload the pasted bytes and
+ * patch the result back in mid-paste — and even when Quill's own image matching *can*
+ * read a usable value off the node, that value is a foreign URL or blob, never one of
+ * our keys; `vocabularyViolations()` would reject it on save anyway (see
+ * `vocabulary.ts`'s `imageReferenceIsURL`). Some paste shapes Quill's own matching can't
+ * even resolve to a string at all — observed with a HEIC photo pasted from Notes.app on
+ * macOS, which the browser hands the page a `blob:` URL that Quill's default image
+ * matching turns into a non-string embed value, corrupting the decoded delta ("Op N's
+ * insert is neither a string nor an embed object"). Dropping every pasted `<img>` up
+ * front sidesteps both failure modes the same way, and matches the Swift editor's own
+ * documented behavior: "Pasted images are dropped entirely — this editor's images only
+ * ever arrive through `RichTextImageUploading`" (`docs/guides/vocabulary-enforcement.md`).
+ */
+export function installPasteGuards(quill: QuillType): void {
+  quill.clipboard.addMatcher("img", (_node, delta) => {
+    const DeltaConstructor = delta.constructor as new () => typeof delta;
+    return new DeltaConstructor();
+  });
+}
+
+/**
  * The shared Quill options. `formats` is the allowlist; `modules.toolbar` offers exactly
  * the same set and nothing more.
  */

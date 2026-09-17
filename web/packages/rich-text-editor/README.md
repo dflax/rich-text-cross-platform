@@ -19,8 +19,10 @@ published to the npm registry itself — see `docs/ROADMAP.md`.
   backstop validation layer, mirroring `RichTextCore/Vocabulary.swift`.
 - `quill-setup.ts` — the constrained Quill configuration: a `formats` allowlist restricted to
   exactly the shared vocabulary (strips out-of-vocabulary formats arriving via paste at the Quill
-  level), and a custom image blot that keeps a Delta image op as an object key, never a URL or a
-  base64 blob.
+  level), a custom image blot that keeps a Delta image op as an object key, never a URL or a
+  base64 blob, and `installPasteGuards()`, which drops every pasted `<img>` outright — see
+  `docs/guides/vocabulary-enforcement.md`'s "Web" section for why a pasted image can never become
+  one of our storage-key embeds.
 - `image-key.ts` — resolves an object key to a fetchable URL at render time; call
   `configureImageBaseURL(url)` once at startup. Mirrors `RichTextCore.PublicURLImageFetcher`.
 - `QuillHost.tsx` — the React component. Dynamically imports Quill (it touches `document` at

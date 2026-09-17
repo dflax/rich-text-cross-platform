@@ -39,3 +39,32 @@ only call the vocabulary-producing methods on `RichTextEditorModel` (`toggleBold
 `toggleUnderline`, `toggleStrike`, `setLineStyle(_:)`, `applyLink(text:url:range:)`,
 `insertImage(key:alt:image:)`) — anything else you might be tempted to reach for directly on the
 text view's storage bypasses these guarantees.
+
+## Web: the same three layers, on Quill
+
+`web/packages/rich-text-editor` enforces the same boundary, with the same three-layer shape,
+using Quill's own extension points instead of UIKit's:
+
+1. **The `formats` allowlist** (`quill-setup.ts`'s `ALLOWED_FORMATS`) restricts what Quill will
+   apply when converting pasted HTML — the same role as UITextView's closed-off system format UI.
+   It filters attribute *names* only, which is why step 3 below still has to run.
+2. **`installPasteGuards(quill)`** registers a clipboard matcher that drops every pasted `<img>`
+   entirely, before Quill's own image matching runs on it — the direct counterpart to
+   `sanitizedForPaste`'s "pasted images are dropped entirely" above. It exists for the same
+   reason: a pasted image can never become one of our storage-key embeds (no async
+   upload-then-patch is possible from inside a clipboard matcher, which must return synchronously),
+   and it closes a real failure mode Quill's own image matching doesn't handle safely on its
+   own — a HEIC photo pasted from Notes.app on macOS arrives as a browser `blob:` URL that
+   Quill's default matching turns into a non-string embed value, corrupting the decoded delta.
+   `QuillHost` calls this for you; a consumer building a custom host directly on `quillOptions`/
+   `registerBlots` must call it too. Formatting attributes on non-image pastes (bold, links,
+   headers, lists) still come through normally — only the `<img>` tag itself is intercepted.
+3. **`vocabularyViolations()` before save** is the backstop, structurally weaker than UIKit's
+   `NSTextStorageDelegate` clamp: it runs at save time against the whole document, not on every
+   edit, and it *reports* violations rather than silently fixing them — the host decides what to
+   do with them (`RichEditorShell` in `rtcp-web-app` refuses to save and surfaces the first
+   violation). This is a real, currently-unclosed gap relative to the Swift side: paste sanitization
+   for *non-image* out-of-vocabulary shapes (e.g. a pasted checklist producing `list: "checked"`,
+   out of range for this vocabulary) has no equivalent to `sanitizedForPaste`'s discard-at-the-point-
+   of-insertion — `clampToVocabulary()` exists but is explicitly attribute-*value* clamping applied
+   by the host on its own paste handler, not something QuillHost wires up automatically today.

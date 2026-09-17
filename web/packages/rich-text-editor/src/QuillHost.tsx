@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import type QuillType from "quill";
 
 import { type Delta, fromParsedJSON } from "./delta";
-import { quillOptions, registerBlots, type QuillOptions } from "./quill-setup";
+import { installPasteGuards, quillOptions, registerBlots, type QuillOptions } from "./quill-setup";
 
 export interface QuillHostProps extends QuillOptions {
   /** Loaded with `setContents`. Changing it reloads the editor. */
@@ -71,6 +71,7 @@ export default function QuillHost({
 
       try {
         quill = new Quill(editorNode, quillOptions({ readOnly, toolbar, allowMergeFields }) as never);
+        installPasteGuards(quill);
         quill.setContents(initialDelta as never, "silent");
         onReadyRef.current?.({
           quill,

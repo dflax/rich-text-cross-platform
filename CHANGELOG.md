@@ -12,9 +12,19 @@ Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.o
   declarations. `main`/`module`/`types`/`exports` repointed at it; `react`/`react-dom`/`quill`
   stay external peer dependencies, not bundled.
 - `CONTRIBUTING.md`, issue templates (bug report, feature request), and a PR template.
+- Web package: `installPasteGuards(quill)`, called automatically by `QuillHost`. Drops every
+  pasted `<img>` before Quill's own image matching runs on it, matching the Swift editor's
+  documented "pasted images are dropped entirely" behavior (`docs/guides/vocabulary-enforcement.md`).
 
 ### Fixed
 
+- Web package: a HEIC photo pasted from Notes.app on macOS (or any paste where Quill's own image
+  matching can't resolve the `<img>` to a string — observed with a browser `blob:` URL src) could
+  produce a non-string image embed (`{"insert":{"image":true}}`) that the strict decoder rejects,
+  surfacing as `Op N's "insert" is neither a string nor an embed object.` and blocking every save
+  until the offending content was manually deleted. Fixed by `installPasteGuards` above, which
+  intercepts every pasted image before Quill's own matching runs, regardless of what that matching
+  would have produced.
 - CI: runs on the `macos-26` hosted runner image instead of `macos-15` — every run had failed 9/9
   since the workflow was added, because `macos-15` boots an actual macOS 15.7.9 host against this
   package's macOS-26 floor. `xcode-version` pinned to `26.6.0` from a confirmed real green run.

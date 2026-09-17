@@ -1,6 +1,6 @@
 {
   "name": "@rich-text-cross-platform/editor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Quill-based rich-text editor enforcing the same small vocabulary and Delta format the Swift RichTextEditor package uses, for cross-platform-consistent documents.",
   "type": "module",
   "main": "./dist/index.js",
@@ -30,6 +30,7 @@
   "devDependencies": {
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
+    "jsdom": "^25.0.1",
     "quill": "^2.0.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
