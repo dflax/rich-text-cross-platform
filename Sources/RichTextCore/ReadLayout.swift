@@ -1,6 +1,18 @@
 import Foundation
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+private typealias PlatformFontAttribute = AttributeScopes.UIKitAttributes.FontAttribute
+private typealias PlatformUnderlineStyleAttribute = AttributeScopes.UIKitAttributes.UnderlineStyleAttribute
+private typealias PlatformStrikethroughStyleAttribute = AttributeScopes.UIKitAttributes.StrikethroughStyleAttribute
+#elseif canImport(AppKit)
+import AppKit
+private typealias PlatformFontAttribute = AttributeScopes.AppKitAttributes.FontAttribute
+private typealias PlatformUnderlineStyleAttribute = AttributeScopes.AppKitAttributes.UnderlineStyleAttribute
+private typealias PlatformStrikethroughStyleAttribute = AttributeScopes.AppKitAttributes.StrikethroughStyleAttribute
+#endif
+
 /// Groups rendered blocks into the largest possible spans of selectable text.
 ///
 /// ## Why this exists
@@ -36,15 +48,91 @@ public enum ReadLayout {
         public let content: Content
     }
 
-    /// Point sizes for the two header levels. Chosen to read as headings next to body text
-    /// without `Font.TextStyle`, because a concrete size is what survives being embedded in an
-    /// `AttributedString` alongside inline emphasis.
+    /// Concrete point size standing in for body text (matches `UIFont.preferredFont(forTextStyle:
+    /// .body)`'s own default-Dynamic-Type resolution on iOS).
+    ///
+    /// **Correction to a claim in this file's own history (and in the now-superseded parts of
+    /// `docs/guides/read-only-rendering.md`):** an earlier pass believed switching this from the
+    /// semantic `Font.TextStyle` value `.body` to this concrete `.system(size: 17)` was sufficient
+    /// to fix a too-small-font bug in a real `UITextView`/`NSTextView` host. It was not. Direct
+    /// measurement (bridging a `.system(size: 17)` `AttributedString` through
+    /// `NSAttributedString(_:)` and inspecting the result) shows **no SwiftUI `Font` value, concrete
+    /// or semantic, survives that bridge at all** — every one lands under a raw, uninterpreted
+    /// custom key (`NSAttributedStringKey(_rawValue: "SwiftUI.Font")`) carrying the original,
+    /// unconverted `Font` object, not a real `UIFont`/`NSFont` under the standard `.font` key.
+    /// `Text(AttributedString)` never depended on that bridge for its own rendering — it resolves
+    /// `Font` through its own internal SwiftUI-native pipeline — which is why this was invisible
+    /// there. The same gap affects `inlinePresentationIntent` (bold/italic), `.underlineStyle`, and
+    /// `.strikethroughStyle`: all four bridge to raw, uninterpreted custom keys, not real font
+    /// traits or `NSAttributedString.Key.underlineStyle`/`.strikethroughStyle` values. See
+    /// `platformBaseFont(for:)` and `addingPlatformAttributes(baseFont:to:)` for the actual fix —
+    /// setting the platform-scoped attribute (`AttributeScopes.UIKitAttributes`/`AppKitAttributes`)
+    /// *alongside* the SwiftUI-scoped one, confirmed by direct measurement to produce a real,
+    /// retrievable `PlatformFont` under the standard `.font` key.
+    private static let bodyPointSize: CGFloat = 17
+
+    /// Point sizes for the two header levels, and the body default above. Sets only the
+    /// SwiftUI-scoped `Font` attribute — kept for `Text`-based consumers, which resolve `Font`
+    /// through their own native pipeline. See `platformBaseFont(for:)` for the platform-scoped
+    /// counterpart a real `UITextView`/`NSTextView` needs (`bodyPointSize`'s doc comment explains
+    /// why both are necessary).
     static func font(for kind: Block.Kind) -> Font {
         switch kind {
         case .header(1): .system(size: 28, weight: .bold)
         case .header: .system(size: 22, weight: .bold)
-        default: .body
+        default: .system(size: bodyPointSize)
         }
+    }
+
+    /// The platform-scoped counterpart to `font(for:)`, same sizes/weights, for a real
+    /// `UITextView`/`NSTextView` host — see `bodyPointSize`'s doc comment for why both are needed.
+    private static func platformBaseFont(for kind: Block.Kind) -> PlatformFont {
+        switch kind {
+        case .header(1): PlatformFont.systemFont(ofSize: 28, weight: .bold)
+        case .header: PlatformFont.systemFont(ofSize: 22, weight: .bold)
+        default: PlatformFont.systemFont(ofSize: bodyPointSize)
+        }
+    }
+
+    /// Merges bold/italic traits into `font` when set. `inlinePresentationIntent` (how bold/italic
+    /// are represented on `AttributedString`, per `DeltaRenderer`) does not survive bridging to
+    /// `NSAttributedString` as real font traits either — see `bodyPointSize`'s doc comment — so a
+    /// real text view needs them baked into an actual `PlatformFont` per run, same as the base size.
+    private static func mergingTraits(bold: Bool, italic: Bool, into font: PlatformFont) -> PlatformFont {
+        guard bold || italic else { return font }
+        #if canImport(UIKit)
+        var traits = font.fontDescriptor.symbolicTraits
+        if bold { traits.insert(.traitBold) }
+        if italic { traits.insert(.traitItalic) }
+        guard let descriptor = font.fontDescriptor.withSymbolicTraits(traits) else { return font }
+        return UIFont(descriptor: descriptor, size: font.pointSize)
+        #elseif canImport(AppKit)
+        var result = font
+        if bold { result = NSFontManager.shared.convert(result, toHaveTrait: .boldFontMask) }
+        if italic { result = NSFontManager.shared.convert(result, toHaveTrait: .italicFontMask) }
+        return result
+        #endif
+    }
+
+    /// Adds the platform-scoped font/underline/strikethrough attributes a real `UITextView`/
+    /// `NSTextView` needs, per run, on top of whatever SwiftUI-scoped attributes `body.font` and
+    /// `DeltaRenderer` already set (left untouched, for `Text`-based consumers). Per-run rather
+    /// than whole-string so inline bold/italic inside a heading merges with the heading's own base
+    /// font instead of overwriting it.
+    private static func addingPlatformAttributes(baseFont: PlatformFont, to attributed: AttributedString) -> AttributedString {
+        var result = attributed
+        for run in attributed.runs {
+            let isBold = run.inlinePresentationIntent?.contains(.stronglyEmphasized) == true
+            let isItalic = run.inlinePresentationIntent?.contains(.emphasized) == true
+            result[run.range][PlatformFontAttribute.self] = mergingTraits(bold: isBold, italic: isItalic, into: baseFont)
+            if run.underlineStyle != nil {
+                result[run.range][PlatformUnderlineStyleAttribute.self] = .single
+            }
+            if run.strikethroughStyle != nil {
+                result[run.range][PlatformStrikethroughStyleAttribute.self] = .single
+            }
+        }
+        return result
     }
 
     /// The visible marker a list item carries. Baked into the text because the whole span has
@@ -57,12 +145,6 @@ public enum ReadLayout {
         }
     }
 
-    /// Matches the edit path's own indent exactly (`NSDeltaCodec.applyVisualBlockStyling`) so a
-    /// list item looks the same whether it's being edited or read. Deliberately does NOT set
-    /// `textLists` - the marker is already baked into the characters here (unlike the edit path,
-    /// where TextKit draws it), so a renderer that also honors `textLists` would draw the marker
-    /// twice.
-    ///
     /// **Known limitation, real hands-on device finding, not yet worked around at this layer:**
     /// SwiftUI's `Text(AttributedString)` silently ignores `.paragraphStyle` entirely - confirmed
     /// by direct measurement (an `NSHostingView` wrapping an indented vs. non-indented `Text` at
@@ -73,11 +155,27 @@ public enum ReadLayout {
     /// confirmed directly) for any host willing to render through a real text-kit-backed surface
     /// (`UITextView`/`NSTextView`, `isEditable = false`) instead of `Text` - see
     /// `docs/guides/read-only-rendering.md`.
-    private static func listParagraphStyle() -> NSParagraphStyle {
+    ///
+    /// `headIndent` is measured from the marker's own actual rendered width at the body point
+    /// size, not a fixed constant copied from the edit path's `NSDeltaCodec.
+    /// applyVisualBlockStyling` - that value was tuned for `NSTextList`'s own marker-drawing
+    /// conventions, not a literal marker string, and a fixed value here would visibly misalign a
+    /// two-digit ordered item ("10.  ", wider than "1.  ") against a bullet's own indent. Real bug,
+    /// found by hands-on device testing: a first attempt at this hardcoded `headIndent = 28`,
+    /// which read as "wrapping in too far" once the body font size above was also corrected to a
+    /// real 17pt (the marker's own width grows with the font, and 28 was never derived from either
+    /// value in the first place). Deliberately does NOT set `textLists` - the marker is already
+    /// baked into the characters here (unlike the edit path, where TextKit draws it), so a
+    /// renderer that also honors `textLists` would draw the marker twice.
+    private static func listParagraphStyle(markerWidth: CGFloat) -> NSParagraphStyle {
         let style = NSMutableParagraphStyle()
-        style.headIndent = 28
+        style.headIndent = ceil(markerWidth)
         style.firstLineHeadIndent = 0
         return style
+    }
+
+    private static func measuredWidth(of marker: String, pointSize: CGFloat) -> CGFloat {
+        (marker as NSString).size(withAttributes: [.font: PlatformFont.systemFont(ofSize: pointSize)]).width
     }
 
     private static func applyingListStyle(_ style: NSParagraphStyle, to attributed: AttributedString) -> AttributedString {
@@ -130,9 +228,11 @@ public enum ReadLayout {
 
                 var line = AttributedString()
                 let marker = marker(for: block.kind)
+                let baseFont = platformBaseFont(for: block.kind)
                 if !marker.isEmpty {
                     var markerText = AttributedString(marker)
                     markerText.font = font(for: block.kind)
+                    markerText[PlatformFontAttribute.self] = baseFont
                     line.append(markerText)
                 }
 
@@ -141,12 +241,14 @@ public enum ReadLayout {
                 // `inlinePresentationIntent`, so bold inside a heading still reads as bolder
                 // than the heading rather than fighting it.
                 body.font = font(for: block.kind)
+                body = addingPlatformAttributes(baseFont: baseFont, to: body)
                 line.append(body)
 
                 var lineListStyle: NSParagraphStyle?
                 switch block.kind {
                 case .bullet, .ordered:
-                    let style = listParagraphStyle()
+                    let width = measuredWidth(of: marker, pointSize: bodyPointSize)
+                    let style = listParagraphStyle(markerWidth: width)
                     line = applyingListStyle(style, to: line)
                     lineListStyle = style
                 default:

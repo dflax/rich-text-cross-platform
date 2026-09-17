@@ -6,6 +6,36 @@ Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.o
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-09-17
+
+### Fixed
+
+- **Correction to the 0.4.6 entry below**: that entry (and `ReadLayout.swift`'s own doc comments at
+  the time) claimed switching `default: .body` to a concrete `.system(size: 17)` was sufficient to
+  fix a too-small read-view font. It was not — direct measurement (bridging a `.system(size: 17)`
+  `AttributedString` through `NSAttributedString(_:)`) shows **no SwiftUI `Font` value, concrete or
+  semantic, survives that bridge at all**; every one lands under a raw, uninterpreted custom key
+  (`"SwiftUI.Font"`) carrying the original, unconverted `Font` object, never a real `UIFont`/`NSFont`
+  under the standard `.font` key. Found by hands-on device testing after 0.4.6 shipped: the read
+  view's body text rendered visibly too small, and in Dark Mode the text color blended into the
+  background (see below) — confirmed via `NSAttributedString` inspection, not assumed.
+- `ReadLayout.groups(from:)`: fixed by setting the platform-scoped font attribute
+  (`AttributeScopes.UIKitAttributes.FontAttribute` / `AppKitAttributes.FontAttribute`) *alongside*
+  the existing SwiftUI-scoped one, confirmed by direct measurement to produce a real, retrievable
+  `PlatformFont` under the standard `.font` key — `Text`-based consumers are unaffected (the
+  SwiftUI-scoped attribute is left in place). The same gap affects `inlinePresentationIntent`
+  (bold/italic) and `.underlineStyle`/`.strikethroughStyle` — all three bridge to raw, uninterpreted
+  custom keys rather than real font traits or `NSAttributedString.Key` values — so bold/italic is now
+  merged into a real per-run `PlatformFont`, and underline/strikethrough are set via
+  `AttributeScopes.UIKitAttributes`/`AppKitAttributes`'s own `UnderlineStyleAttribute`/
+  `StrikethroughStyleAttribute` the same way. The list-marker `headIndent` measurement
+  (`measuredWidth(of:pointSize:)`, from 0.4.6) is unaffected by this — it was already measuring
+  against a real `PlatformFont`, just one that (until now) didn't match what actually rendered.
+- Dark Mode text-color invisibility in a real `UITextView`/`NSTextView` read-only host: not a
+  `RichTextCore` bug — see `flux-student-directory`'s own `ReadOnlyRichText.swift` fix, which needed
+  the same `didMoveToWindow()`/`viewDidMoveToWindow()` dynamic-color re-application
+  `RichTextEditorUITextView` already has, applied to the new read-only view too.
+
 ## [0.4.6] - 2026-09-17
 
 ### Fixed
