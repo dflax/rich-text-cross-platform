@@ -13,13 +13,13 @@ import UIKit
 @MainActor
 struct RichTextEditorModelTests {
 
-    private func makeModel(_ text: String = "Hello\n") async -> (RichTextEditorModel, UITextView) {
+    private func makeModel(_ text: String = "Hello\n", allowingMergeFields: Bool = false) async -> (RichTextEditorModel, UITextView) {
         let delta = Delta(ops: [.text(text)])
         let store = try! ImageStore(
             directory: URL(filePath: NSTemporaryDirectory()).appending(path: UUID().uuidString),
             fetcher: LocalDirectoryImageFetcher(directory: URL(filePath: NSTemporaryDirectory()))
         )
-        let (model, content) = await RichTextEditorModel.load(delta: delta, imageStore: store)
+        let (model, content) = await RichTextEditorModel.load(delta: delta, imageStore: store, allowingMergeFields: allowingMergeFields)
         let textView = UITextView()
         textView.attributedText = content
         model.attach(textView)
@@ -93,6 +93,40 @@ struct RichTextEditorModelTests {
         let info = textView.textStorage.attribute(.richTextImageInfo, at: 0, longestEffectiveRange: &range, in: NSRange(location: 0, length: textView.textStorage.length)) as? RichImageAttachmentInfo
         #expect(info?.key == "doc-images/test.jpg")
         #expect(info?.alt == "A test image")
+    }
+
+    @Test("insertMergeField tags the attachment with a resolvable richTextMergeFieldInfo, inline with the surrounding text")
+    func insertMergeFieldTagsAttachment() async {
+        let (model, textView) = await makeModel("Dear , welcome.\n", allowingMergeFields: true)
+        textView.selectedRange = NSRange(location: 5, length: 0)
+
+        model.insertMergeField(name: "viewer.firstName")
+
+        var range = NSRange(location: 0, length: 0)
+        let info = textView.textStorage.attribute(.richTextMergeFieldInfo, at: 5, longestEffectiveRange: &range, in: NSRange(location: 0, length: textView.textStorage.length)) as? RichMergeFieldAttachmentInfo
+        #expect(info?.name == "viewer.firstName")
+        #expect(textView.textStorage.string == "Dear \u{FFFC}, welcome.\n")
+    }
+
+    @Test("insertMergeField is a no-op when the session was not opted into merge-field authoring")
+    func insertMergeFieldNoOpWhenDisallowed() async {
+        let (model, textView) = await makeModel("Dear , welcome.\n", allowingMergeFields: false)
+        textView.selectedRange = NSRange(location: 5, length: 0)
+
+        model.insertMergeField(name: "viewer.firstName")
+
+        #expect(textView.textStorage.string == "Dear , welcome.\n")
+    }
+
+    @Test("encodeIfChanged accepts a mergeField edit as valid when the session allows merge fields")
+    func encodeIfChangedAllowsMergeFieldWhenEnabled() async {
+        let (model, textView) = await makeModel("Dear , welcome.\n", allowingMergeFields: true)
+        textView.selectedRange = NSRange(location: 5, length: 0)
+        model.insertMergeField(name: "viewer.firstName")
+
+        #expect(model.encodeIfChanged())
+        #expect(model.integrityFailure == nil)
+        #expect(model.savedDelta.ops.contains(.mergeField("viewer.firstName")))
     }
 }
 #endif

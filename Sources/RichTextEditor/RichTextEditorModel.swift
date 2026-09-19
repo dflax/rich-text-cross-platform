@@ -29,6 +29,12 @@ public final class RichTextEditorModel {
     public private(set) var lastError: String?
     public private(set) var integrityFailure: String?
 
+    /// Whether this session may author `mergeField` embeds — set once at `load(delta:imageStore:allowingMergeFields:)`
+    /// and never changed afterward. Gates both `insertMergeField(name:)` and the vocabulary check
+    /// `encodeIfChanged()` runs, so a host app opts a whole editing session in or out, never a
+    /// single call.
+    public let allowsMergeFields: Bool
+
     /// Mirrors `textView.selectedRange`, updated by the coordinator's
     /// `textViewDidChangeSelection`. A plain stored value (not read live from the text view) so
     /// SwiftUI's `@Observable` tracking actually fires when the toolbar needs to re-render its
@@ -45,9 +51,10 @@ public final class RichTextEditorModel {
 
     private var debounceTask: Task<Void, Never>?
 
-    private init(delta: Delta) {
+    private init(delta: Delta, allowsMergeFields: Bool) {
         originalDelta = delta
         savedDelta = delta
+        self.allowsMergeFields = allowsMergeFields
     }
 
     // MARK: - Loading
@@ -56,7 +63,16 @@ public final class RichTextEditorModel {
     /// from the (already-warmed) `ImageStore` cache first — `NSDeltaCodec.decode` never touches
     /// the network or the actor itself. Call `imageStore.prefetch(keys:)` before this if the
     /// images aren't already cached, so decode never has to wait on one.
-    public static func load(delta: Delta, imageStore: ImageStore) async -> (RichTextEditorModel, NSAttributedString) {
+    ///
+    /// - Parameter allowingMergeFields: opts this whole editing session into `mergeField`
+    ///   authoring — pass `true` only for the specific document types a host app wants that on.
+    ///   `false` (the default) matches every existing caller's behavior unchanged: a `mergeField`
+    ///   embed already present in `delta` still fails to decode.
+    public static func load(
+        delta: Delta,
+        imageStore: ImageStore,
+        allowingMergeFields: Bool = false
+    ) async -> (RichTextEditorModel, NSAttributedString) {
         var images: [String: UIImage] = [:]
         for key in delta.imageKeys {
             if let url = try? await imageStore.localURL(for: key),
@@ -64,9 +80,9 @@ public final class RichTextEditorModel {
                 images[key] = image
             }
         }
-        let attributed = (try? NSDeltaCodec.decode(delta.ops, image: { images[$0] }))
+        let attributed = (try? NSDeltaCodec.decode(delta.ops, image: { images[$0] }, allowingMergeFields: allowingMergeFields))
             ?? NSMutableAttributedString(string: "\n")
-        return (RichTextEditorModel(delta: delta), attributed)
+        return (RichTextEditorModel(delta: delta, allowsMergeFields: allowingMergeFields), attributed)
     }
 
     /// Called once by the representable after it creates the `UITextView`.
@@ -87,8 +103,9 @@ public final class RichTextEditorModel {
         guard let textView else { return }
         selectedRange = textView.selectedRange
         var typing = textView.typingAttributes
-        if typing[.richTextImageInfo] != nil || typing[.richTextBlockToken] != nil {
+        if typing[.richTextImageInfo] != nil || typing[.richTextMergeFieldInfo] != nil || typing[.richTextBlockToken] != nil {
             typing[.richTextImageInfo] = nil
+            typing[.richTextMergeFieldInfo] = nil
             typing[.richTextBlockToken] = nil
             textView.typingAttributes = typing
         }
@@ -438,6 +455,31 @@ public final class RichTextEditorModel {
         markDirty()
     }
 
+    // MARK: - Merge fields
+
+    /// Inserts a `mergeField` pill at the current cursor, replacing any active selection —
+    /// inline, unlike `insertImage`, since a merge field sits inside running text ("Dear
+    /// {name},") rather than starting its own line. No-op if this session wasn't opted into
+    /// merge-field authoring (`allowsMergeFields == false`) — `encodeIfChanged()` would reject
+    /// the result anyway, so this fails silently at the point a caller's own misconfiguration
+    /// would otherwise surface as a confusing save-time integrity error instead.
+    public func insertMergeField(name: String) {
+        guard allowsMergeFields, let textView else { return }
+        let storage = textView.textStorage
+        let range = textView.selectedRange
+
+        let attachment = MergeFieldTextAttachment(name: name)
+        let run = NSMutableAttributedString(attachment: attachment)
+        run.addAttribute(.richTextMergeFieldInfo, value: RichMergeFieldAttachmentInfo(name: name), range: NSRange(location: 0, length: run.length))
+
+        storage.beginEditing()
+        storage.replaceCharacters(in: range, with: run)
+        storage.endEditing()
+
+        textView.selectedRange = NSRange(location: range.location + run.length, length: 0)
+        markDirty()
+    }
+
     // MARK: - Encoding
 
     /// Called by the coordinator's `textViewDidChange` on every keystroke, and internally by
@@ -463,7 +505,7 @@ public final class RichTextEditorModel {
         debounceTask?.cancel()
         guard let textView else { return false }
         let encoded = Delta(ops: NSDeltaCodec.encode(textView.textStorage))
-        let violations = encoded.vocabularyViolations()
+        let violations = encoded.vocabularyViolations(allowingMergeFields: allowsMergeFields)
         guard violations.isEmpty else {
             integrityFailure = "Editing produced an invalid document: \(violations.map(\.description).joined(separator: "; "))"
             return false

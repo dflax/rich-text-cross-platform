@@ -6,6 +6,26 @@ Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.o
 
 ## [Unreleased]
 
+### Added
+
+- **`mergeField` embeds are now authorable, opt-in per document type** — previously a read-path-only
+  feasibility shape (rendered, but rejected outright if a client tried to open one for editing). A
+  host app can now opt a specific editing session/instance into merge-field authoring:
+  - Swift: `RichTextEditorModel.load(delta:imageStore:allowingMergeFields:)` (default `false`,
+    matching every existing caller's behavior unchanged) and the new `insertMergeField(name:)`
+    method, modeled on the existing `insertImage(key:alt:image:)` but inline rather than
+    block-level — a merge field sits inside running text ("Dear {name},"), not on its own line.
+    `NSDeltaCodec.decode` gains the same `allowingMergeFields` parameter; `RichTextEditorConfiguration`
+    gains `allowsMergeFields` so `RichTextEditor` threads the opt-in through automatically.
+  - Web: `quillOptions({ allowMergeFields: true })` now also permits *authoring* (previously
+    documented as "never true for the editor," read-only-only) — a host's own
+    `quill.insertEmbed(index, "mergeField", name)` call is accepted and preserved, gated by the same
+    flag Quill's `formats` allowlist already enforced for rendering. `MergeFieldBlot` now renders a
+    visually distinct pill (inline styles, not an external stylesheet class, since this package ships
+    no CSS at all) instead of raw text.
+  - Both sides: a document containing a `mergeField` embed that was NOT opted into throws/is rejected
+    exactly as before — this is additive, not a loosening of the default vocabulary.
+
 ## [0.4.7] - 2026-09-17
 
 ### Fixed

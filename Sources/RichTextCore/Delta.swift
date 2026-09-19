@@ -83,6 +83,10 @@ public struct Op: Equatable, Hashable, Sendable {
         Op(insert: .embed(.image(key: key)), attributes: alt.map { ["alt": .string($0)] })
     }
 
+    public static func mergeField(_ name: String) -> Op {
+        Op(insert: .embed(.mergeField(name: name)))
+    }
+
     /// The text this op contributes to a document's plain-text projection. Embeds
     /// contribute nothing.
     public var textContent: String {

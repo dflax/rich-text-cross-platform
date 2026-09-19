@@ -114,11 +114,20 @@ export function registerBlots(Quill: typeof QuillType): void {
 
   Quill.register(StorageKeyImage, true);
 
-  // A merge-field read-path spike shape. Registered so `fixtures/spike/mergefield.json` can be RENDERED
+  // A merge-field embed. Registered so `fixtures/spike/mergefield.json` can be RENDERED
   // (without a blot, Parchment throws "Unable to create mergeField blot" and the whole
-  // document fails to load). It is deliberately NOT in ALLOWED_FORMATS, so it stays
-  // unauthorable: no toolbar button, no paste path, and `vocabularyViolations()` still
-  // rejects it unless merge fields are explicitly allowed — exactly as on the Swift side.
+  // document fails to load). It is deliberately NOT in ALLOWED_FORMATS, so a plain Quill
+  // instance stays unauthorable by default: no toolbar button, no paste path, and
+  // `vocabularyViolations()` still rejects it unless merge fields are explicitly allowed
+  // (see `RENDER_FORMATS`/`allowMergeFields`) — exactly as on the Swift side.
+  //
+  // Styled with inline styles rather than a `.merge-field` class in an external
+  // stylesheet: this package ships no CSS at all (the host owns Quill's theme CSS and
+  // any of its own overrides), so a class-only treatment would render as unstyled,
+  // invisible-boundary text unless every host remembered to add matching CSS. Inline
+  // styles make the pill visually distinct out of the box, in both the read view and an
+  // editor a host has opted into `allowMergeFields` for; `data-field`/`.merge-field` stay
+  // for a host that does want to layer its own CSS on top.
   const Embed = Quill.import("blots/embed") as any;
 
   class MergeFieldBlot extends Embed {
@@ -131,6 +140,10 @@ export function registerBlots(Quill: typeof QuillType): void {
       node.setAttribute("data-field", String(value));
       node.setAttribute("contenteditable", "false");
       node.textContent = String(value);
+      node.style.cssText =
+        "display:inline-block;padding:1px 8px;border-radius:9999px;" +
+        "background-color:rgba(37,99,235,0.15);color:rgb(37,99,235);" +
+        "font-size:0.875em;line-height:1.4;white-space:nowrap;";
       return node;
     }
 
@@ -152,7 +165,19 @@ export const RENDER_FORMATS = [...ALLOWED_FORMATS, "mergeField"];
 export interface QuillOptions {
   readOnly?: boolean;
   toolbar?: boolean;
-  /** Render-only escape hatch for the merge-field spike fixture. Never true for the editor. */
+  /**
+   * Opts this Quill instance into the `mergeField` embed — both for rendering (the
+   * read-only corpus/spike pages) and, when combined with `readOnly: false`, for
+   * authoring: `formats` then includes `mergeField`, so a host's own imperative
+   * `quill.insertEmbed(index, "mergeField", name)` call is accepted and preserved
+   * instead of being silently dropped, and `vocabularyViolations({ allowingMergeFields:
+   * true })` must be used to validate the result before save. `false` by default:
+   * this is a narrow, document-type-specific capability, not a default part of the
+   * vocabulary — a host should set this only on the specific document types (and the
+   * specific Quill instance) it wants merge fields for, never as a blanket default.
+   * There is still no toolbar button and no paste path for it either way — insertion is
+   * always a deliberate, host-driven call, not something Quill offers on its own.
+   */
   allowMergeFields?: boolean;
 }
 

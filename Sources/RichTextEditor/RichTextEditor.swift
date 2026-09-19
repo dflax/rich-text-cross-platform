@@ -23,6 +23,13 @@ public struct RichTextEditorConfiguration: Sendable {
     /// Show the link button and accept a pasted link's `.link` attribute. When `false`, a
     /// pasted link's URL is stripped along with everything else outside the vocabulary.
     public var allowsLinks: Bool = true
+    /// Opt this editor into `mergeField` authoring — a `mergeField` embed already present in
+    /// `delta` decodes instead of failing to load, and `model.insertMergeField(name:)` inserts
+    /// new ones, rendered as a small pill (see `MergeFieldTextAttachment`). `false` by default:
+    /// this is a narrow, document-type-specific capability, not a default part of the
+    /// vocabulary — a host app should set this only on the specific document types it wants
+    /// merge fields for, leaving every other document type unaffected.
+    public var allowsMergeFields: Bool = false
     /// Long-edge pixel cap and JPEG quality applied to a picked image before upload — see
     /// `ImageDownscaling`.
     public var imageDownscaling: ImageDownscaling = .default
@@ -42,12 +49,14 @@ public struct RichTextEditorConfiguration: Sendable {
     public init(
         allowsImages: Bool = true,
         allowsLinks: Bool = true,
+        allowsMergeFields: Bool = false,
         imageDownscaling: ImageDownscaling = .default,
         toolbar: (@MainActor @Sendable (RichTextEditorModel) -> AnyView)? = nil,
         showsUnsavedIndicator: Bool = true
     ) {
         self.allowsImages = allowsImages
         self.allowsLinks = allowsLinks
+        self.allowsMergeFields = allowsMergeFields
         self.imageDownscaling = imageDownscaling
         self.toolbar = toolbar
         self.showsUnsavedIndicator = showsUnsavedIndicator
@@ -168,7 +177,11 @@ public struct RichTextEditor: View {
     private func load() async {
         guard !hasStartedLoading else { return }
         hasStartedLoading = true
-        let (created, content) = await RichTextEditorModel.load(delta: delta, imageStore: imageStore)
+        let (created, content) = await RichTextEditorModel.load(
+            delta: delta,
+            imageStore: imageStore,
+            allowingMergeFields: configuration.allowsMergeFields
+        )
         model = created
         initialContent = content
         onModelReady?(created)

@@ -120,6 +120,28 @@ struct NSDeltaCodecTests {
         }
     }
 
+    @Test("A mergeField embed decodes without throwing when the caller explicitly allows it")
+    func mergeFieldDecodesWhenAllowed() throws {
+        let ops: [Op] = [.text("Dear "), .mergeField("viewer.firstName"), .text(",\n")]
+        let decoded = try NSDeltaCodec.decode(ops, image: { _ in nil }, allowingMergeFields: true)
+        #expect(decoded.string.contains("\u{FFFC}"))
+    }
+
+    @Test("A decoded mergeField round-trips back to the identical embed op, inline with no forced newline")
+    func mergeFieldRoundTrips() throws {
+        let ops: [Op] = [.text("Dear "), .mergeField("viewer.firstName"), .text(", welcome.\n")]
+        let decoded = try NSDeltaCodec.decode(ops, image: { _ in nil }, allowingMergeFields: true)
+        let encoded = NSDeltaCodec.encode(decoded)
+        #expect(Delta(ops: encoded) == Delta(ops: ops).coalesced())
+    }
+
+    @Test("A mergeField embed is inline: it needs no surrounding newline, unlike an image")
+    func mergeFieldHasNoBlockInvariant() throws {
+        let ops: [Op] = [.text("Dear "), .mergeField("viewer.firstName"), .text(", welcome.\n")]
+        let violations = Delta(ops: ops).vocabularyViolations(allowingMergeFields: true)
+        #expect(violations.isEmpty, "Expected an inline mergeField to need no newline pairing; got: \(violations)")
+    }
+
     @Test("A missing newline after an image is restored rather than producing an invalid Delta")
     func missingImageTerminatorIsRestored() throws {
         // Simulates a live edit that left text directly after an attachment on the same line —

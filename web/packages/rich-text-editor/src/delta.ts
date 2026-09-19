@@ -20,7 +20,12 @@ export type Attributes = Record<string, AttributeValue>;
 
 // MARK: - Embeds
 
-/** Images are the only embed in the shipped vocabulary. `mergeField` is a read-path spike. */
+/**
+ * Images are always authorable. `mergeField` is not part of the vocabulary by default —
+ * a document type must explicitly opt in (see `vocabulary.ts`'s `allowingMergeFields` and
+ * `quill-setup.ts`'s `allowMergeFields`) before a `mergeField` embed passes validation or
+ * decodes for editing.
+ */
 export type Embed = { image: string } | { mergeField: string };
 
 const EMBED_KEYS = ["image", "mergeField"] as const;

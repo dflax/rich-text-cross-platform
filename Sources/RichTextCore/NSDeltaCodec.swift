@@ -30,6 +30,12 @@ extension NSAttributedString.Key {
     /// slot for "the key this came from" — this is that slot. `encode` reads it back directly;
     /// it never infers a key from the loaded image.
     public static let richTextImageInfo = NSAttributedString.Key("com.richtextcrossplatform.nsImageInfo")
+
+    /// Carries the field name a `mergeField` attachment was decoded from, tagged on the same
+    /// single-character range as the `.attachment` key — the merge-field counterpart of
+    /// `.richTextImageInfo`. `encode` reads it back directly; it never infers a name from the
+    /// rendered pill.
+    public static let richTextMergeFieldInfo = NSAttributedString.Key("com.richtextcrossplatform.nsMergeFieldInfo")
 }
 
 /// The payload of `.richTextImageInfo`.
@@ -43,13 +49,22 @@ public struct RichImageAttachmentInfo: Hashable, Sendable {
     }
 }
 
+/// The payload of `.richTextMergeFieldInfo`.
+public struct RichMergeFieldAttachmentInfo: Hashable, Sendable {
+    public var name: String
+
+    public init(name: String) {
+        self.name = name
+    }
+}
+
 public enum NSDeltaCodecError: Error, Equatable, CustomStringConvertible {
     case mergeFieldNotEditable(index: Int)
 
     public var description: String {
         switch self {
         case .mergeFieldNotEditable(let i):
-            "Op \(i) is a mergeField embed, a read-path feasibility spike shape. It is not authorable and cannot reach this editor."
+            "Op \(i) is a mergeField embed. This document was decoded without merge-field authoring enabled, so it cannot reach this editor — pass `allowingMergeFields: true` to `decode` if the host app means to allow it here."
         }
     }
 }
@@ -78,6 +93,97 @@ public final class FittedImageTextAttachment: NSTextAttachment {
     }
 }
 
+/// An `NSTextAttachment` rendering a `mergeField` embed as a small rounded pill labeled with
+/// its literal field name (e.g. `"viewer.firstName"`), never a resolved value — resolution is
+/// always a host-app, read-time concern (see `Vocabulary.vocabularyViolations(allowingMergeFields:)`'s
+/// doc comment), so the editor always shows the exact string that will round-trip, letting an
+/// author see precisely which field they inserted. Inline, not block-level, unlike
+/// `FittedImageTextAttachment` — a merge field sits inside running text ("Dear {name},"), so
+/// this attachment carries no forced-newline invariant of its own.
+public final class MergeFieldTextAttachment: NSTextAttachment {
+    public init(name: String) {
+        super.init(data: nil, ofType: nil)
+        image = Self.pillImage(name: name)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("MergeFieldTextAttachment does not support NSCoding")
+    }
+
+    private static func pillImage(name: String) -> PlatformImage {
+        let font = PlatformFont.preferredFont(forTextStyle: .footnote)
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: PlatformColor.richTextMergeFieldPillText,
+        ]
+        let textSize = (name as NSString).size(withAttributes: attributes)
+        let horizontalPadding: CGFloat = 8
+        let verticalPadding: CGFloat = 3
+        let size = CGSize(width: textSize.width + horizontalPadding * 2, height: textSize.height + verticalPadding * 2)
+
+        #if canImport(UIKit)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { _ in
+            let rect = CGRect(origin: .zero, size: size)
+            let path = UIBezierPath(roundedRect: rect, cornerRadius: size.height / 2)
+            PlatformColor.richTextMergeFieldPillFill.setFill()
+            path.fill()
+            (name as NSString).draw(
+                in: CGRect(x: horizontalPadding, y: verticalPadding, width: textSize.width, height: textSize.height),
+                withAttributes: attributes
+            )
+        }
+        #elseif canImport(AppKit)
+        let image = NSImage(size: size)
+        image.lockFocus()
+        let rect = CGRect(origin: .zero, size: size)
+        let path = NSBezierPath(roundedRect: rect, xRadius: size.height / 2, yRadius: size.height / 2)
+        PlatformColor.richTextMergeFieldPillFill.setFill()
+        path.fill()
+        (name as NSString).draw(
+            in: CGRect(x: horizontalPadding, y: verticalPadding, width: textSize.width, height: textSize.height),
+            withAttributes: attributes
+        )
+        image.unlockFocus()
+        return image
+        #endif
+    }
+
+    override public func attachmentBounds(
+        for textContainer: NSTextContainer?,
+        proposedLineFragment lineFrag: CGRect,
+        glyphPosition position: CGPoint,
+        characterIndex charIndex: Int
+    ) -> CGRect {
+        guard let image else {
+            return super.attachmentBounds(for: textContainer, proposedLineFragment: lineFrag, glyphPosition: position, characterIndex: charIndex)
+        }
+        // Nudged down slightly so the pill optically centers on the surrounding text's
+        // baseline instead of sitting on it — a plain 0-origin attachment (the image's own
+        // bottom-left at the baseline) reads as floating high relative to lowercase text.
+        return CGRect(x: 0, y: -3, width: image.size.width, height: image.size.height)
+    }
+}
+
+extension PlatformColor {
+    fileprivate static var richTextMergeFieldPillFill: PlatformColor {
+        #if canImport(UIKit)
+        UIColor.systemBlue.withAlphaComponent(0.15)
+        #elseif canImport(AppKit)
+        NSColor.systemBlue.withAlphaComponent(0.15)
+        #endif
+    }
+
+    fileprivate static var richTextMergeFieldPillText: PlatformColor {
+        #if canImport(UIKit)
+        UIColor.systemBlue
+        #elseif canImport(AppKit)
+        NSColor.systemBlue
+        #endif
+    }
+}
+
 /// Converts a whole Delta (text and image ops together) to and from an `NSAttributedString`.
 ///
 /// Two design choices worth being explicit about — see `docs/ARCHITECTURE.md`:
@@ -100,13 +206,24 @@ public enum NSDeltaCodec {
     ///   `ImageStore` first (see `ImageStore.prefetch(keys:)`) rather than block decode on a
     ///   fetch; tests pass a stub. A `nil` result still produces a correctly-tagged attachment
     ///   with no visible image, so round-trip correctness never depends on image bytes existing.
-    public static func decode(_ ops: [Op], image: (String) -> PlatformImage?) throws -> NSMutableAttributedString {
+    /// - Parameter allowingMergeFields: a `mergeField` embed is not authorable by default (see
+    ///   `Vocabulary.vocabularyViolations(allowingMergeFields:)`) — decode mirrors that by
+    ///   throwing on one unless the caller explicitly opts in, which a host app should do only
+    ///   for the specific document types it wants merge-field authoring on.
+    public static func decode(
+        _ ops: [Op],
+        image: (String) -> PlatformImage?,
+        allowingMergeFields: Bool = false
+    ) throws -> NSMutableAttributedString {
         let result = NSMutableAttributedString()
 
         for (index, op) in ops.enumerated() {
             switch op.insert {
-            case .embed(.mergeField):
-                throw NSDeltaCodecError.mergeFieldNotEditable(index: index)
+            case .embed(.mergeField(let name)):
+                guard allowingMergeFields else {
+                    throw NSDeltaCodecError.mergeFieldNotEditable(index: index)
+                }
+                result.append(mergeFieldAttachmentRun(name: name))
 
             case .embed(.image(let key)):
                 var alt: String?
@@ -139,6 +256,19 @@ public enum NSDeltaCodec {
 
         applyVisualBlockStyling(result)
         return result
+    }
+
+    /// Inline, unlike `attachmentRun(key:alt:image:)` — a merge field carries no
+    /// forced-newline/terminator run of its own.
+    private static func mergeFieldAttachmentRun(name: String) -> NSAttributedString {
+        let attachment = MergeFieldTextAttachment(name: name)
+        let run = NSMutableAttributedString(attachment: attachment)
+        run.addAttribute(
+            .richTextMergeFieldInfo,
+            value: RichMergeFieldAttachmentInfo(name: name),
+            range: NSRange(location: 0, length: run.length)
+        )
+        return run
     }
 
     private static func attachmentRun(key: String, alt: String?, image: PlatformImage?) -> NSAttributedString {
@@ -238,6 +368,17 @@ public enum NSDeltaCodec {
                 if character != "\n" {
                     ops.append(.text("\n"))
                 }
+            }
+
+            // A merge-field attachment character: emit the op directly from the tagged field
+            // name. Inline, unlike an image — no terminator newline is forced, since a merge
+            // field sits inside running text rather than starting its own line.
+            if character == "\u{FFFC}",
+               let info = text.attribute(.richTextMergeFieldInfo, at: utf16Offset, effectiveRange: nil) as? RichMergeFieldAttachmentInfo {
+                flushText()
+                ops.append(.mergeField(info.name))
+                bufferAttributes = nil
+                continue
             }
 
             // An attachment character: emit the image op directly from the tagged info, never
@@ -465,7 +606,7 @@ public enum NSDeltaCodec {
     /// outside the vocabulary and must never survive.
     private static let allowedAttributeKeys: Set<NSAttributedString.Key> = [
         .font, .foregroundColor, .underlineStyle, .strikethroughStyle, .link,
-        .paragraphStyle, .attachment, .richTextBlockToken, .richTextImageInfo,
+        .paragraphStyle, .attachment, .richTextBlockToken, .richTextImageInfo, .richTextMergeFieldInfo,
     ]
 
     private static func symbolicTraits(of font: PlatformFont?) -> (bold: Bool, italic: Bool) {

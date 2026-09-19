@@ -13,13 +13,13 @@ import Testing
 @MainActor
 struct RichTextEditorModelMacTests {
 
-    private func makeModel(_ text: String = "Hello\n") async -> (RichTextEditorModel, NSTextView) {
+    private func makeModel(_ text: String = "Hello\n", allowingMergeFields: Bool = false) async -> (RichTextEditorModel, NSTextView) {
         let delta = Delta(ops: [.text(text)])
         let store = try! ImageStore(
             directory: URL(filePath: NSTemporaryDirectory()).appending(path: UUID().uuidString),
             fetcher: LocalDirectoryImageFetcher(directory: URL(filePath: NSTemporaryDirectory()))
         )
-        let (model, content) = await RichTextEditorModel.load(delta: delta, imageStore: store)
+        let (model, content) = await RichTextEditorModel.load(delta: delta, imageStore: store, allowingMergeFields: allowingMergeFields)
         let textView = NSTextView()
         textView.textStorage?.setAttributedString(content)
         model.attach(textView)
@@ -108,6 +108,46 @@ struct RichTextEditorModelMacTests {
         #expect(model.encodeIfChanged())
         #expect(model.savedDelta.plainText == "Hello, world\n")
         #expect(model.integrityFailure == nil)
+    }
+
+    @Test("insertMergeField tags the attachment with a resolvable richTextMergeFieldInfo, inline with the surrounding text")
+    func insertMergeFieldTagsAttachment() async {
+        let (model, textView) = await makeModel("Dear , welcome.\n", allowingMergeFields: true)
+        textView.selectedRanges = [NSValue(range: NSRange(location: 5, length: 0))]
+
+        model.insertMergeField(name: "viewer.firstName")
+
+        guard let storage = textView.textStorage else {
+            Issue.record("expected a text storage")
+            return
+        }
+        var range = NSRange(location: 0, length: 0)
+        let info = storage.attribute(.richTextMergeFieldInfo, at: 5, longestEffectiveRange: &range, in: NSRange(location: 0, length: storage.length)) as? RichMergeFieldAttachmentInfo
+        #expect(info?.name == "viewer.firstName")
+        // No forced newline on either side — the attachment sits directly between "Dear " and
+        // ", welcome." on one line, unlike insertImage's own block-level behavior.
+        #expect(storage.string == "Dear \u{FFFC}, welcome.\n")
+    }
+
+    @Test("insertMergeField is a no-op when the session was not opted into merge-field authoring")
+    func insertMergeFieldNoOpWhenDisallowed() async {
+        let (model, textView) = await makeModel("Dear , welcome.\n", allowingMergeFields: false)
+        textView.selectedRanges = [NSValue(range: NSRange(location: 5, length: 0))]
+
+        model.insertMergeField(name: "viewer.firstName")
+
+        #expect(textView.textStorage?.string == "Dear , welcome.\n")
+    }
+
+    @Test("encodeIfChanged accepts a mergeField edit as valid when the session allows merge fields")
+    func encodeIfChangedAllowsMergeFieldWhenEnabled() async {
+        let (model, textView) = await makeModel("Dear , welcome.\n", allowingMergeFields: true)
+        textView.selectedRanges = [NSValue(range: NSRange(location: 5, length: 0))]
+        model.insertMergeField(name: "viewer.firstName")
+
+        #expect(model.encodeIfChanged())
+        #expect(model.integrityFailure == nil)
+        #expect(model.savedDelta.ops.contains(.mergeField("viewer.firstName")))
     }
 }
 #endif
