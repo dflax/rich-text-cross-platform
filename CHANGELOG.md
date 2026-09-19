@@ -6,6 +6,8 @@ Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.o
 
 ## [Unreleased]
 
+## [0.4.8] - 2026-09-19
+
 ### Added
 
 - **`mergeField` embeds are now authorable, opt-in per document type** — previously a read-path-only
